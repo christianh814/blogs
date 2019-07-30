@@ -310,7 +310,7 @@ Once you created the new file, copy it over to your webserver:
 scp ~/ocp4/bootstrap-static.ign webserver.example.com:/var/www/html/ignition/
 ```
 
-##__IMPORTANT__**: When using static IP addresses, you will need to do this for **ALL** nodes in your cluster. In my environment I ended up with six ignition files.
+**__IMPORTANT__**: When using static IP addresses, you will need to do this for **ALL** nodes in your cluster. In my environment I ended up with six ignition files.
 
 ```
 tree /var/www/html/ignition/
