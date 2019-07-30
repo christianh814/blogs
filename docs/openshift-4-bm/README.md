@@ -1,6 +1,6 @@
 # OpenShift 4.1 Bare Metal Install Quickstart
 
-In this blog we will go over how to get you quickly up and running with an OpenShift 4.1 Bare Metal install on pre-existing infrastructure. Although this quickstart focuses on the bare metal installer, this can also be seen as a "manual" way to install OpenShift 4.1. Moreover, this is also applicable to installing to any platform which doesn’t have the ability to provide [ignition](https://coreos.com/ignition/docs/latest/) pre-boot. For more information about using this generic approach to install on untested platforms, please see this [knowledge base article](https://access.redhat.com/articles/4207611).
+In this blog we will go over how to get you quickly up and running with an OpenShift 4.1 Bare Metal install on pre-existing infrastructure. Although this quickstart focuses on the bare metal installer, this can also be seen as a "manual" way to install OpenShift 4.1. Moreover, this is also applicable to installing to any platform which doesn't have the ability to provide [ignition](https://coreos.com/ignition/docs/latest/) pre-boot. For more information about using this generic approach to install on untested platforms, please see this [knowledge base article](https://access.redhat.com/articles/4207611).
 
 ## Introduction
 
@@ -12,7 +12,7 @@ I will be going over installing OpenShift 4 Bare Metal, on a pre-existing infras
 
 ## Prerequisites
 
-It’s important that you get familiar with the prerequisites by reading the [official documentation](https://docs.openshift.com/container-platform/4.1/installing/installing_bare_metal/installing-bare-metal.html) for OpenShift. There you can find more details about the prerequisites and what it entails. I have broken up the prerequisites into sections and have marked those that are optional.
+It's important that you get familiar with the prerequisites by reading the [official documentation](https://docs.openshift.com/container-platform/4.1/installing/installing_bare_metal/installing-bare-metal.html) for OpenShift. There you can find more details about the prerequisites and what it entails. I have broken up the prerequisites into sections and have marked those that are optional.
 
 ### DNS
 
@@ -20,7 +20,7 @@ Proper DNS setup is imperative for a functioning OpenShift cluster. DNS is used 
 
 #### Forward DNS Records
 
-Create forward DNS records for your bootstrap, master, and worker nodes. Also, you’ll need to create entries for both `api` and `api-int` and point them to their respective load balancers (**NOTE** both of those entries can point to the same load balancer). You will also need to create a wildcard DNS entry pointing to the load balancer. This entry is used by the OpenShift router. Here is a sample using `bind` with `ocp4` as the `<clusterid>`.
+Create forward DNS records for your bootstrap, master, and worker nodes. Also, you'll need to create entries for both `api` and `api-int` and point them to their respective load balancers (**NOTE** both of those entries can point to the same load balancer). You will also need to create a wildcard DNS entry pointing to the load balancer. This entry is used by the OpenShift router. Here is a sample using `bind` with `ocp4` as the `<clusterid>`.
 
 ```
 ; The api and api-inf can point to the IP of the same load balancer
@@ -70,7 +70,7 @@ An example of a DNS zonefile with reverse records can be found [here](https://gi
 
 #### DNS Records for ETCD
 
-Two record types need to be created for ETCD. The forward record needs to point to the IPs of the masters (CNAMEs are fine as well). Also the names need to be `etcd-<index>` where `<index>` is a number starting at 0. An example will be `etcd-0`, `etcd-1`, and `etcd-2`. You will also need to create SRV records pointing to the various `etcd-<index>` entries. You’ll need to set these records with a priority 0, weight 10 and port 2380. Below is an example using `example.com` as the `<basedomain>` and using `ocp4` as the `<clusterid>`.
+Two record types need to be created for ETCD. The forward record needs to point to the IPs of the masters (CNAMEs are fine as well). Also the names need to be `etcd-<index>` where `<index>` is a number starting at 0. An example will be `etcd-0`, `etcd-1`, and `etcd-2`. You will also need to create SRV records pointing to the various `etcd-<index>` entries. You'll need to set these records with a priority 0, weight 10 and port 2380. Below is an example using `example.com` as the `<basedomain>` and using `ocp4` as the `<clusterid>`.
 
 ```
 ; The ETCd cluster lives on the masters...so point these to the IP of the masters
@@ -123,7 +123,7 @@ backend machine-config-server
     server master2   192.168.1.99:22623 check
 ```
 
-You will also need to configure `80` and `443` to point to the worker nodes. The HAProxy configuration is below (keeping in mind that we’re using TCP sockets).
+You will also need to configure `80` and `443` to point to the worker nodes. The HAProxy configuration is below (keeping in mind that we're using TCP sockets).
 
 ```
 frontend ingress-http
@@ -165,7 +165,7 @@ curl -J -L -O https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4
 
 ### Setup DHCP (Optional if doing static ips)
 
-It is recommended to use the DHCP server to manage the node’s IP addresses for the cluster long-term. Ensure that the DHCP server is configured to provide persistent IP addresses and host names to the cluster machines. Using DHCP with IP reservation ensures the IPs won’t change on reboots. For a sample configuration; please see this [dhcpd.conf](https://github.com/openshift-tigerteam/guides/blob/master/ocp4/ocp4-dhcpd.conf) file.
+It is recommended to use the DHCP server to manage the node's IP addresses for the cluster long-term. Ensure that the DHCP server is configured to provide persistent IP addresses and host names to the cluster machines. Using DHCP with IP reservation ensures the IPs won't change on reboots. For a sample configuration; please see this [dhcpd.conf](https://github.com/openshift-tigerteam/guides/blob/master/ocp4/ocp4-dhcpd.conf) file.
 
 ### Reconciling Prerequisites
 
@@ -174,3 +174,89 @@ If you plan on installing OpenShift 4 in a "lab" environment (either on bare met
 Take a look at the [quickstart](https://github.com/christianh814/ocp4-upi-helpernode/blob/master/quickstart.md#helper-node-quickstart-install) to see if it might be of use. These steps are written for Libvirt, but the playbook is agnostic. So you can run it on your BareMetal environm
 
 ## Installation
+
+Unlike the full stack automated install method, the pre-existing infrastructure install is done in phases. The three main phases are: ignition config creation, bootstrap, and install complete. In this section I will be going over how to install OpenShift 4 on Bare Metal with the assumption that you have all the prerequisites in place. I will be installing the following:
+
+* 3 Master nodes, 2 Worker nodes, and 1 bootstrap node.
+* I will be using my internal `example.com` domain.
+* I will be using `ocp4` as my clusterid.
+* I will be using static IPs (but will go over DHCP as well)
+* I am doing the install from a "bastion" Linux host
+* Make sure you download the [client and installer](https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.1.6/)
+
+### Creating The Install Configuration
+
+First (after all the prereqs are done), we need to create an `install-config.yaml` file. This is the file where we set parameters for our installation. Create a working directory to store all the files.
+
+```
+mkdir ~/ocp4
+cd ~/ocp4
+```
+
+Once in this directory, create the `install-config.yaml` file based on the following template. Substitute your entries where applicable. I will go over the relevant configurations from a high level.
+
+```yaml
+apiVersion: v1
+baseDomain: example.com
+compute:
+- hyperthreading: Enabled
+  name: worker
+  replicas: 0
+controlPlane:
+  hyperthreading: Enabled
+  name: master
+  replicas: 3
+metadata:
+  name: ocp4
+networking:
+  clusterNetworks:
+  - cidr: 10.254.0.0/16
+    hostPrefix: 24
+  networkType: OpenShiftSDN
+  serviceNetwork:
+  - 172.30.0.0/16
+platform:
+  none: {}
+pullSecret: '{"auths": ...}'
+sshKey: 'ssh-ed25519 AAAA...'
+```
+
+Please note/change the following:
+
+* `baseDomain` - This is the domain of your environment
+* `metadata.name` - This is your clusterid
+  * **Note**: This will effectively make all FQDNS `ocp4.example.com`
+* `pullSecret - This pull secret can be obtained by going to [cloud.redhat.com](https://cloud.redhat.com/openshift/install)
+  * Login with your Red Hat account
+  * Click on "Bare Metal"
+  * Either "Download Pull Secret" or "Copy Pull Secret"
+* `sshKey` - This is your public SSH key (e.g. `id_rsa.pub`)
+
+**Note**: The worker replicas is set to 0 doesn't mean you're going to install 0 workers...it means that we are not going to generate [machineconfigs](https://github.com/openshift/machine-api-operator#machine-api-operator) for the cluster.
+
+### Generate Ignition Configurations
+
+[Ignition](https://coreos.com/ignition/docs/latest/) is a tool for manipulating configuration during early boot, before the operating system starts. This includes things like writing files (regular files, systemd units, networkd units, etc.) and configuring users. Think of it as a cloud-init that runs once (during first boot).
+
+OpenShift 4 installer generates these ignition configs to prepare the node as an OpenShift bootstrap/master/worker node. From within your working directory (in this example it's `~/ocp4`) generate the ignition configs.
+
+```
+cd ~/ocp4
+openshift-install create ignition-configs
+```
+
+**REMINDER**: Your `install-config.yaml` must be in your working directory (`~/ocp4` in this example).  Creating the ignition-configs will result in the `install-config.yaml` file being removed by the installer, you may want to create a copy and store it outside of this directory.
+
+This will leave the following files in your `~/ocp4` working directory.
+
+```
+tree .
+.
+├── auth
+│   ├── kubeadmin-password
+│   └── kubeconfig
+├── bootstrap.ign
+├── master.ign
+├── metadata.json
+└── worker.ign
+```
