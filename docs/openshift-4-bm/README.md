@@ -331,4 +331,4 @@ Installing RHEL CoreOS (RHCOS) is a straightforward process. Depending on which 
 
 Boot from the ISO, and you’ll be greeted with the following screen.
 
-![isoinstall](image/rhcos.png)
+![isoinstall](images/rhcos.png)
