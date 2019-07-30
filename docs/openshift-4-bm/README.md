@@ -329,7 +329,144 @@ Installing RHEL CoreOS (RHCOS) is a straightforward process. Depending on which 
 
 #### DHCP
 
-Boot from the ISO, and you’ll be greeted with the following screen.
+Boot from the ISO, and you'll be greeted with the following screen.
 
 ![isoinstall](images/rhcos.png)
 
+Once you see this menu, press `Tab` and append the options needed to the boot line.  These include the url for BIOS or UEFI image the node needs and the ignition file created by `openshift-install` (**NOTE**: The entries need to be all in one line). Here is an example.
+
+```
+coreos.inst.install_dev=vda
+coreos.inst.image_url=http://192.168.7.77:8080/install/rhcos-4.1.0-x86_64-metal-bios.raw.gz
+coreos.inst.ignition_url=http://192.168.7.77:8080/ignition/bootstrap.ign
+```
+
+Here is an explanation of the CoreOS options:
+
+* `coreos.inst.install_dev` - The block device which RHCOS will install to.
+* `coreos.inst.image_url` - The URL of the UEFI or BIOS image that you uploaded to the web server.
+* `coreos.inst.ignition_url` - The URL of the Ignition config file for this machine type.
+
+#### Static IPs
+
+Just like the DHCP method, boot from the ISO, and you'll be greeted with the following screen.
+
+![isoinstall](images/rhcos.png)
+
+Once you see this menu, press tab and enter the options that will image the node using the bios file you downloaded, and prepare the node using the ignition file you'll provide. Here is an example that I did for my bootstrap server.
+
+```
+ip=192.168.7.20::192.168.7.1:255.255.255.0:bootstrap:enp1s0:none:192.168.7.77
+coreos.inst.install_dev=vda
+coreos.inst.image_url=http://192.168.7.77:8080/install/rhcos-4.1.0-x86_64-metal-bios.raw.gz
+coreos.inst.ignition_url=http://192.168.7.77:8080/ignition/bootstrap-static.ign
+```
+
+**AGAIN**: This needs to be all in one line. I only used line breaks for ease of readability. You will need to put it all in one like the example below.
+
+![isoinstall](images/rhcos-tab-install.png)
+
+Syntax for the `ip=` portion is: `ip=<ipaddress>::<defaultgw>:<netmask>:<hostname>:<iface>:none:<dns server>`
+
+### Finishing Up The Install
+
+Once the bootstrap server is up and running, the install is actually already in progress. First the masters "check in" to the bootstrap server for it's configuration. After the masters are done being configured, the bootstrap server "hands off" responsibility to the masters. You can track the bootstrap process with the following command.
+
+```
+openshift-install wait-for bootstrap-complete --log-level debug
+```
+
+Once the bootstrap process is finished, you'll see the following message.
+
+```
+DEBUG OpenShift Installer v4.1.0-201905212232-dirty 
+DEBUG Built from commit 71d8978039726046929729ad15302973e3da18ce 
+INFO Waiting up to 30m0s for the Kubernetes API at https://api.ocp4.example.com:6443... 
+INFO API v1.13.4+838b4fa up                       
+INFO Waiting up to 30m0s for bootstrapping to complete... 
+DEBUG Bootstrap status: complete                   
+INFO It is now safe to remove the bootstrap resources
+```
+
+At this point you can remove the bootstrap server from the load balancer. If you're using VMs, you can safely delete the bootstrap node. If you're using bare metal, you can safely repurpose this machine.
+
+Basic functionality of the cluster is now available, however the cluster is not ready for applications. You can now login and take a look at what's finishing up.
+
+```
+cd ~/ocp4
+export KUBECONFIG=auth/kubeconfig
+oc get nodes
+```
+
+You can take a look to see if any node CSRs are pending.
+
+```
+oc get csr
+```
+
+You can accept the CSRs by running `oc adm certificate approve <csr_name>` - conversely, you can run the following to approve them all (requires `jq` command).
+
+```
+oc get csr -ojson | jq -r '.items[] | select(.status == {} ) | .metadata.name' | xargs oc adm certificate approve
+```
+
+The install won't complete without you setting up some storage for the image registry. The below command sets up an "emptyDir" (temp storage). If you'd like to use a more permanent solution; please [see this](https://docs.openshift.com/container-platform/4.1/installing/installing_bare_metal/installing-bare-metal.html#registry-configuring-storage-baremetal_installing-bare-metal).
+
+Once that's set, finish up the installation by running the following command
+
+```
+openshift-install wait-for install-complete
+```
+
+You'll see the following information about your cluster, including information about the `kubeadmin` account. This is meant to be a temporary administrative account. Please see [this doc](https://docs.openshift.com/container-platform/4.1/authentication/understanding-identity-provider.html#understanding-identity-provider) to configure identity providers.
+
+```
+INFO Waiting up to 30m0s for the cluster at https://api.ocp4.example.com:6443 to initialize...
+INFO Waiting up to 10m0s for the openshift-console route to be created...
+INFO Install complete!                            
+INFO To access the cluster as the system:admin user when using 'oc', run 'export KUBECONFIG=/root/ocp4/auth/kubeconfig'
+INFO Access the OpenShift web-console here: https://console-openshift-console.apps.ocp4.example.com
+INFO Login to the console with user: kubeadmin, password: PftLM-P6i6B-SEZ2R-QLICJ
+```
+
+### Upgrade Cluster
+
+If you've installed an earlier Z release; you can upgrade it to the latest release from the command line. First check what version you have.
+
+```
+# oc get clusterversion
+NAME      VERSION        AVAILABLE           PROGRESSING             SINCE         STATUS
+version   4.1.6          True                False                   21m           Cluster version is 4.1.6
+```
+
+Initiate an upgrade with the following command
+
+```
+oc adm upgrade --to-latest=true
+```
+
+Check the status with the following
+
+```
+# oc get clusterversion
+NAME          VERSION             AVAILABLE       PROGRESSING                  SINCE     STATUS
+version       4.1.6               True            True                         45s       Working towards 4.1.7: 13% complete
+```
+
+## Conclusion
+
+In this blog, I went through how to install an OpenShift 4 cluster on pre-existing infrastructure on bare metal. This method can also be used on other environments that doesn’t yet have the ability to do an ignition pre-boot. 
+
+The new install and deploy process used by OpenShift 4 for bare metal can be a bit confusing and intimidating at first, however this guide, and the documentation, aim to explain the requirements and our goal is to help you be successful.  The prerequisites, especially DNS and the load balancers, are critical to success and often the most complex part, so it’s important to read ahead of time to avoid deployment issues.  
+
+If you encounter issues, you can connect to the nodes using the SSH key you provided in the `install-config.yaml` to check the status and look for errors.  Once the cluster has been instantiated, you can pull logs and diagnostic information from the nodes using standard `oc` CLI commands or the administrator GUI.  And, you can always open a support case for help with any aspect of your OpenShift cluster.
+
+After your cluster is deployed, you may want to do some additional configuration tasks such as:
+
+* Configuring authentication and additional users
+* Adding additional routes and/or sharding network traffic
+* Migrating OpenShift services to specific nodes
+* Configuring persistent storage or adding a dynamic storage provisioner
+* Adding more nodes to the cluster
+
+If you have any questions, please leave a comment below or reach out via the [Customer Portal Discussions page](https://access.redhat.com/discussions).
