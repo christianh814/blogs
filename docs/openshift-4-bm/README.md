@@ -260,3 +260,66 @@ tree .
 ├── metadata.json
 └── worker.ign
 ```
+
+You will need to do one of the following, depending on what kind of installation you're doing.
+
+#### DHCP
+
+If you're using DHCP, simply copy over the ignition files to your webserver. For example, this is what I did for my installation.
+
+```
+scp ~/ocp4/*.ign webserver.example.com:/var/www/html/ignition/
+```
+
+#### Static IPs
+
+For static IPs; you need to generate new ignition files based on the ones that the OpenShift installer generated. You can use the [filetranspiler](https://github.com/ashcrow/filetranspiler) tool in order to make this process a little easier. When using `filetranspiler` you first need to create a "fakeroot" filesystem. This is an example form the bootstrap node.
+
+```
+cat <<EOF > bootstrap/etc/sysconfig/network-scripts/ifcfg-enp1s0
+DEVICE=enp1s0
+BOOTPROTO=none
+ONBOOT=yes
+IPADDR=192.168.7.20
+NETMASK=255.255.255.0
+GATEWAY=192.168.7.1
+DNS1=192.168.7.77
+DNS2=8.8.8.8
+DOMAIN=ocp4.example.com
+PREFIX=24
+DEFROUTE=yes
+IPV6INIT=no
+EOF
+```
+
+**NOTE**: Your interface WILL probably differ, be sure to determine the persistent name of the device(s) before creating the network configuration files.
+
+Using `filetranspiler`, create a new ignition file based on the one created by `openshift-install`. Continuing with the example of my bootstrap server; it looks like this.
+
+```
+filetranspiler -i bootstrap.ign -f bootstrap -o bootstrap-static.ign
+```
+
+The syntax is: `filetranspiler -i <original ign file> -f <fakeroot> -o <output ign file>`
+
+NOTE: If you're using the container version of `filetranspiler`, you need to be in the directory where these files/dirs are. In other words, absolute paths won't work.
+
+Once you created the new file, copy it over to your webserver:
+
+```
+scp ~/ocp4/bootstrap-static.ign webserver.example.com:/var/www/html/ignition/
+```
+
+##__IMPORTANT__**: When using static IP addresses, you will need to do this for **ALL** nodes in your cluster. In my environment I ended up with six ignition files.
+
+```
+tree /var/www/html/ignition/
+├── bootstrap-static.ign
+├── master0.ign
+├── master1.ign
+├── master2.ign
+├── worker0.ign
+└── worker1.ign
+
+0 directories, 6 files
+```
