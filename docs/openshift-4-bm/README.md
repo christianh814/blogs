@@ -323,3 +323,12 @@ tree /var/www/html/ignition/
 
 0 directories, 6 files
 ```
+### Install Red Hat Enterprise Linux CoreOS
+
+Installing RHEL CoreOS (RHCOS) is a straightforward process. Depending on which method you are doing (DHCP or Static IPs); choose one of the following.
+
+#### DHCP
+
+Boot from the ISO, and you’ll be greeted with the following screen.
+
+![isoinstall](image/rhcos.png)
