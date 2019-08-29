@@ -11,6 +11,8 @@ In my environment, I have two networks. One network is completley disconnected; 
 * Registry server (where I will mirror the content)
 * Apache webserver (where I will store installation artifacts)
 
+Here is a high-level overview of the environment I'll be working on.
+
 ![disconnected-diag](images/disconnected-diagram.jpg)
 
 In my environment, I have already set up DNS, DHCP, and other ancillary services for my network. It's important to get familiar with the [OpenShift 4 prerequisites](https://docs.openshift.com/container-platform/4.1/installing/installing_bare_metal/installing-bare-metal.html#installation-infrastructure-user-infra_installing-bare-metal) before attempting an install.
