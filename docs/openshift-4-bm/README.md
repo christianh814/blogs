@@ -412,6 +412,10 @@ oc get csr -ojson | jq -r '.items[] | select(.status == {} ) | .metadata.name' |
 
 The install won't complete without you setting up some storage for the image registry. The below command sets up an "emptyDir" (temp storage). If you'd like to use a more permanent solution; please [see this](https://docs.openshift.com/container-platform/4.1/installing/installing_bare_metal/installing-bare-metal.html#registry-configuring-storage-baremetal_installing-bare-metal).
 
+```
+oc patch configs.imageregistry.operator.openshift.io cluster --type merge --patch '{"spec":{"storage":{"emptyDir":{}}}}'
+```
+
 Once that's set, finish up the installation by running the following command
 
 ```
