@@ -209,7 +209,8 @@ update-ca-trust extract
 With this in place, you can mirror the images.
 
 ```
-oc adm release mirror -a ${AIRGAP_SECRET_JSON} --from=quay.io/${UPSTREAM_REPO}/${RELEASE_NAME}:${OCP_RELEASE} \
+oc adm release mirror -a ${AIRGAP_SECRET_JSON} \
+--from=quay.io/${UPSTREAM_REPO}/${RELEASE_NAME}:${OCP_RELEASE} \
 --to=${AIRGAP_REG}/${AIRGAP_REPO} --to-release-image=${AIRGAP_REG}/${AIRGAP_REPO}:${OCP_RELEASE}
 ```
 
