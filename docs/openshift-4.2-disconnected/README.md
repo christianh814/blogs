@@ -1,15 +1,18 @@
 # OpenShift 4.2 Disconnected Install Preview
 
-In a [previous blog](https://blog.openshift.com/introducing-red-hat-openshift-4-2-in-developer-preview-releasing-nightly-builds/), it was announced that Red Hat was releasing the OpenShift nightly builds. This gives users a chance to test up coming features. One of the features is the ability to perform a "disconnected" or "airgapped" install. This type of install let's you install OpenShift 4, in an environment without access to the internet, or is otherwise restricted.
+In a [previous blog](https://blog.openshift.com/introducing-red-hat-openshift-4-2-in-developer-preview-releasing-nightly-builds/), it was announced that Red Hat was releasing the OpenShift nightly builds. This gives users a chance to test up coming features. One of the features is the ability to perform a "disconnected" or "airgapped" install. This type of install let's you install OpenShift 4, in an environment without access to the internet or is otherwise restricted.
 
 **NOTE, that nightly builds are unsupported and are for testing purposes only**
 
+In this blog I will be going over how to perform a disconnected install in a lab environmet. I will also give an overview of my environment, how to mirror the needed images, and any other tips and tricks I've learned along the way.
+
 ## Environment Overview
 
-In my environment, I have two networks. One network is completley disconnected; and has no access to the internet. The other network is connected and has full access to the network. I will use a "bastion" host that has access to both networks. This bastion host will perform the following functions.
+In my environment, I have two networks. One network is completley disconnected; and has no access to the internet. The other network is connected to the internet and has full access. I will use a "bastion" host that has access to both networks. This bastion host will perform the following functions.
 
 * Registry server (where I will mirror the content)
 * Apache webserver (where I will store installation artifacts)
+* Installation host (where I will be performing the installation from)
 
 Here is a high-level overview of the environment I'll be working on.
 
@@ -21,43 +24,43 @@ Doing a disconnected install can be challenging, so I recommend trying a [fully 
 
 ### Registry Set Up
 
-You can use your own registry or build one from scratch. I used the following steps to build one from scratch. Since I'll be using a container, I will need `podman` on my host.
+You can use your own registry or build one from scratch. I used the following steps to build one from scratch. Since I'll be using a container for my registry, and Apache for my webserver, I will need `podman`  and `httpd` on my host.
 
-```
-yum -y install podman
+```shell
+yum -y install podman httpd httpd-tools
 ```
 
-Create the directories you'll need to run the registry.
+Create the directories you'll need to run the registry. These directories will be mounted in the container running the registry.
 
-```
+```shell
 mkdir -p /opt/registry/{auth,certs,data}
 ```
 
 Next, Generate self-signed certificate (I'll be using `registry.ocp4.example.com` as my hostname. Make sure your hostname is in DNS and resolves to the correct IP)
 
-```
+```shell
 cd /opt/registry/certs
 openssl req -newkey rsa:4096 -nodes -sha256 -keyout domain.key -x509 -days 365 -out domain.crt
 ```
 
 Generate username and password (must use bcrpt formated passwords), for access to your registry.
 
-```
+```shell
 htpasswd -bBc /opt/registry/auth/htpasswd dummy dummy
 ```
 
-Make sure to open port 5000 on your host
+Make sure to open port 5000 on your host, as this is the default port for the registry. Since I am using Apache to stage the files I need for installation, I will open port 80 as well.
 
-```
+```shell
 firewall-cmd --add-port=5000/tcp --zone=internal --permanent
 firewall-cmd --add-port=5000/tcp --zone=public   --permanent
+firewall-cmd --add-service=http  --permanent
 firewall-cmd --reload
 ```
 
+Now you're ready to run the container. Here I specify the directories I want to mount inside the container. I also specify I want to run on port 5000. I recommend you put this in a shell script for ease of starting.
 
-Run the container (you might want to put this in a script)
-
-```
+```shell
 podman run --name poc-registry -p 5000:5000 \
 -v /opt/registry/data:/var/lib/registry:z \
 -v /opt/registry/auth:/auth:z \
@@ -73,45 +76,41 @@ docker.io/library/registry:2
 
 Verify connectivity to your registry with `curl`. Provide it the `username` and `password` you created.
 
-```
+```shell
 curl -u dummy:dummy -k https://registry.ocp4.example.com:5000/v2/_catalog
 ```
 
 > Note, this should return an "empty" repo
 
-I will also be staging the artifacts needed for installation on this host. So I will need apache to be installed.
+If you have issues connecting try and stop the container.
 
-```
-yum -y install httpd
+```shell
+podman stop poc-registry
 ```
 
-I will need to open the `http` ports as well
-
-```
-firewall-cmd --add-service=http --permanent
-firewall-cmd --reload
-```
+Once it's down you can start it back up using the same `podman run` command as before.
 
 ### Obtaining Artifacts
 
-You will need the preview builds for 4.2. You will need the client binaries along with the install artifacts. This can be found in the dev preview links provided below.
+You will need the preview builds for 4.2 in order to do a disconnected install. Specifically, you will need the client binaries along with the install artifacts. This can be found in the dev preview links provided below.
 
 * [Client Binaries](https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest/)
 * [Install Artifacts](https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/latest/)
 
-Download the binaries and any installation artifacts you may need for the installation. The file names will differ depending on when you chose to download the preview builds.
+Download the binaries and any installation artifacts you may need for the installation. The file names will differ depending on when you chose to download the preview builds (they get updated often).
 
 To download the client binaries to your staging server/area (in my case, it's the registry server itself) use `curl`:
 
-```
+```shell
 curl https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest/openshift-client-linux-${BUILDNUMBER}.tar.gz -o /var/www/html/
 curl https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest/openshift-install-linux-${BUILDNUMBER}.tar.gz -o /var/www/html/
 ```
 
-You'll also need the clients on your registry host, so feel free to un-tar them now.
+You'll also need these clients on your registry host, so feel free to un-tar them now.
 
-```
+```shell
 tar -xzf /var/www/html/openshift-client-linux-${BUILDNUMBER}.tar.gz -C /usr/local/bin/
+tar -xzf /var/www/html/openshift-install-linux-${BUILDNUMBER}.tar.gz -C /usr/local/bin/
 ```
 
 Depending on what kind of install you will do, you would need to do one of the following.
@@ -120,37 +119,38 @@ Depending on what kind of install you will do, you would need to do one of the f
 
 If you're doing a PXE install, you'll need the bios, initramfs, and the kernel files.
 
-```
+```shell
 curl https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/latest/rhcos-${BUILDNUMBER}-metal-bios.raw.gz -o /var/www/html/
 curl https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/latest/rhcos-${BUILDNUMBER}-installer-initramfs.img -o /var/www/html/
 curl https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/latest/rhcos-${BUILDNUMBER}-installer-kernel -o /var/www/html/
 ```
 
-Once you have staged these, copy them over and set them on your PXE server for installation.
-
+Once you have staged these, copy them over into your environment. Once they are in your PXE install server and your configuration updated, you can proceed to mirror your images.
 
 #### ISO Install
 
-If you're doing an ISO install, you'll still need the bios file along with the ISO
+If you're doing an ISO install, you'll still need the bios file but only the ISO for the install.
 
-```
+```shell
 curl https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/latest/rhcos-${BUILDNUMBER}-metal-bios.raw.gz -o /var/www/html/
 curl https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/latest/rhcos-${BUILDNUMBER}-installer.iso -o /var/www/html/
 ```
 
-Once these are staged, copy them over where you'll need them for the installation.
+Once these are staged, copy them over where you'll need them for the installation. The bios file will need to be on a webserver accessable to the OpenShift cluster. The ISO can be burned into a disk/usb drive or mounted via your virtualization platform.
+
+Once that's done, you can proceed to mirror your images.
 
 
 ### Mirroring Images
 
-In order to do the installation, you will need to mirror the images used by OpenShift 4. Before you begin you need to make sure you have the following in place.
+The installation images will need to be mirrored in order to complete the installation. Before you begin you need to make sure you have the following in place.
 
 * An internal registry to mirror the images to (like the one I just built)
-  * You'll also need the crt of this registry
+  * You'll also need the certificate of this registry
   * The username/password for access
 * A pullsecret obtained at [try.openshift.com](https://cloud.redhat.com/openshift/install/pre-release)
   * I downloaded mine and saved it as `~/pull-secret.json`
-* The `oc` cli tool installed
+* The `oc` and `openshift-install` cli tools installed
 * The `jq` command is also helpful
 
 First, you will need to get the information to mirror. This information can be obtained via the dev-preview [release notes](https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest/release.txt). With this information, I constructed the following environment variables.
@@ -165,19 +165,19 @@ export OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE=${AIRGAP_REG}/${AIRGAP_REPO}:${O
 export RELEASE_NAME="ocp-release-nightly"
 ```
 
-I will go over how to construct this from the [release notes](https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest/release.txt)
+I will go over how to constructed these environment variables from the [release notes](https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest/release.txt)
 
 * `OCP_RELEASE` - Can be obtained by the `Release Metadata.Version` section of the release page.
 * `AIRGAP_REG` - This is your registry's hostname with port
 * `AIRGAP_REPO` - This is the name of the repo in your registry (you don't have to create it beforehand)
 * `UPSTREAM_REPO` - Can be obtianed from the `Pull From` section of the release page.
-* `AIRGAP_SECRET_JSON` - This is the path to your pull secret (which we will create later)
+* `AIRGAP_SECRET_JSON` - This is the path to your pull secret  with your registry's information (which we will create later)
 * `OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE` - This environment variable is set so the installer knows to use your registry.
 * `RELEASE_NAME` - This can be obtained in the `Pull From` section of the release page.
 
 Before you can mirror the images, you'll need to add the authentication for your registy in your pull secret file (the one you got from [try.openshift.com](https://try.openshift.com)). This will look like this...
 
-```
+```json
 {
 	"registry.ocp4.example.com:5000":
 		{
@@ -189,26 +189,26 @@ Before you can mirror the images, you'll need to add the authentication for your
 
 The base64 is a construction of the registry's auth in the `username:password` format. For example, with the username of `dummy` and password of `dummy`; I created the base64 by running...
 
-```
+```shell
 echo -n 'dummy:dummy' | base64 -w0
 ```
 
-You can add this to your pull secret by using `jq` crete a new file based on it.
+You can your pull secret with your registry information by using `jq` and the pull secret you downloaded.
 
-```
+```shell
 jq '.auths += {"registry.ocp4.example.com:5000": {"auth": "ZHVtbXk6ZHVtbXk=","email": "noemail@localhost"}}' < ~/pull-secret.json > ~/pull-secret-2.json
 ```
 
-Also, if you haven't done so already, make sure you trust your own self signed certifiacte.
+Also, if you haven't done so already, make sure you trust your own self signed certifiacte. This is neeeded in order for `oc` to be able to login to your registry during the mirror process.
 
-```
+```shell
 cp /opt/registry/certs/domain.crt /etc/pki/ca-trust/source/anchors/
 update-ca-trust extract
 ```
 
-With this in place, you can mirror the images.
+With this in place, you can mirror the images with the following command.
 
-```
+```shell
 oc adm release mirror -a ${AIRGAP_SECRET_JSON} \
 --from=quay.io/${UPSTREAM_REPO}/${RELEASE_NAME}:${OCP_RELEASE} \
 --to=${AIRGAP_REG}/${AIRGAP_REPO} --to-release-image=${AIRGAP_REG}/${AIRGAP_REPO}:${OCP_RELEASE}
@@ -216,7 +216,7 @@ oc adm release mirror -a ${AIRGAP_SECRET_JSON} \
 
 Part of the output will have an example `imageContentSources` to put in your `install-config.yaml` file. It'll look something like this.
 
-```
+```yaml
 imageContentSources:
 - mirrors:
   - registry.ocp4.example.com:5000/ocp4/openshift4
@@ -238,7 +238,7 @@ I will be going over the installation at a high level.
 
 You need to provide an `install-config.yaml` file when you create your ignition config. Here is an example for a disconnected install.
 
-```
+```yaml
 apiVersion: v1
 baseDomain: example.com
 compute:
@@ -282,7 +282,7 @@ Some things to note here:
 * `additionalTrustBundle` - this is your crt file for your registry. (i.e. the output of `cat domain.crt`)
 * `imageContentSources` -  What is the local registry is and the expected original source that should be in the metadata (otherwise they should be considered as tampered)
 
-You will also need to export the `OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE` environment variable. This is in the form of `${AIRGAP_REG}/${AIRGAP_REPO}:${OCP_RELEASE}`. It looked like this in my environment.
+You will also need to export the `OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE` environment variable. This tells OpenShift which image to use for bootstraping. This is in the form of `${AIRGAP_REG}/${AIRGAP_REPO}:${OCP_RELEASE}`. It looked like this in my environment.
 
 ```
 export OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE=registry.ocp4.example.com:5000/ocp4/openshift4:4.2.0-0.nightly-2019-08-29-062233
