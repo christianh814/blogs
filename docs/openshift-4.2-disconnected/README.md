@@ -284,24 +284,24 @@ Some things to note here:
 
 You will also need to export the `OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE` environment variable. This tells OpenShift which image to use for bootstraping. This is in the form of `${AIRGAP_REG}/${AIRGAP_REPO}:${OCP_RELEASE}`. It looked like this in my environment.
 
-```
+```shell
 export OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE=registry.ocp4.example.com:5000/ocp4/openshift4:4.2.0-0.nightly-2019-08-29-062233
 ```
 
 I created my `install-config.yaml` under the `/root/ocp4` directory. At this point you can create your ignition configs
 
-```
+```shell
 openshift-install create ignition-configs --dir=/root/ocp4
 INFO Consuming "Install Config" from target directory 
 WARNING Making control-plane schedulable by setting MastersSchedulable to true for Scheduler cluster settings 
 WARNING Found override for ReleaseImage. Please be warned, this is not advised 
 ```
 
-Please note that it warns you about overriding the image and that for 4.2 dev preview, and that the masters are schedulable.
+Please note that it warns you about overriding the image and that for the 4.2 dev preview, that the masters are schedulable.
 
 Make sure to copy the ignition files to your webserver for the installation
 
-```
+```shell
 cp /root/ocp4/*.ign /var/www/html/ignition/
 restorecon -vR /var/www/html/
 ```
@@ -332,7 +332,7 @@ Perform the same procedure for your Masters and Workers as well.
 
 Just like a normal install you wait for the boostrap step to finish (once you booted and installed the boostrap, master, and worker nodes)
 
-```
+```shell
 openshift-install wait-for bootstrap-complete --dir=/root/ocp4 --log-level debug
 ```
 
@@ -354,31 +354,31 @@ Once you see that message, you can delete/repurpose the bootstrap node.
 
 Export your `KUBECONFIG` environment variable to connect to your cluster
 
-```
+```shell
 export KUBECONFIG=/root/ocp4/auth/kubeconfig
 ```
 
-You will need to set your image registry to use some sort of storage. You can assign a PV or use object storage. For testing, I will use `emptyDir` (**NOTE** doing this makes the storage for your images ephemeral)
+You will need to set your image registry to use some sort of [storage](https://docs.openshift.com/container-platform/4.1/installing/installing_bare_metal/installing-bare-metal.html#installation-registry-storage-config_installing-bare-metal). You can assign a PV or use object storage. For testing, I will use `emptyDir` (**NOTE** doing this makes the storage for your images ephemeral)
 
-```
+```shell
 oc patch configs.imageregistry.operator.openshift.io cluster --type merge --patch '{"spec":{"storage":{"emptyDir":{}}}}'
 ```
 
-Check the status of your nodes
+Check the status of your nodes.
 
-```
+```shell
 oc get nodes
 ```
 
 If any say `NotReady`; you may have to approve the CSR. View what's pending with `oc get csr`, you can also approve all of them at once with the following command.
 
-```
+```shell
 oc get csr --no-headers | awk '{print $1}' | xargs oc adm certificate approve
 ```
 
 Once you've approved any pending node CSRs and you've set the storage for your registry, you can finish up the install.
 
-```
+```shell
 openshift-install wait-for install-complete --dir=/root/ocp4
 ```
 
@@ -395,7 +395,7 @@ INFO Login to the console with user: kubeadmin, password: JZEGE-akpeR-vpXbU-KbFb
 
 View the cluster version
 
-```
+```shell
 oc get clusterversion
 NAME      VERSION                             AVAILABLE   PROGRESSING   SINCE   STATUS
 version   4.2.0-0.nightly-2019-08-29-062233   True        False         3m57s   Cluster version is 4.2.0-0.nightly-2019-08-29-062233
