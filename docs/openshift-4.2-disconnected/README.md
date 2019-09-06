@@ -166,7 +166,7 @@ First, you will need to get the information to mirror. This information can be o
 export OCP_RELEASE="4.2.0-0.nightly-2019-08-29-062233"
 export AIRGAP_REG='registry.ocp4.example.com:5000'
 export AIRGAP_REPO='ocp4/openshift4'
-export UPSTREAM_REPO='openshift-release-dev'   ## or 'openshift'
+export UPSTREAM_REPO='openshift-release-dev'
 export AIRGAP_SECRET_JSON='~/pull-secret-2.json'
 export OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE=${AIRGAP_REG}/${AIRGAP_REPO}:${OCP_RELEASE}
 export RELEASE_NAME="ocp-release-nightly"
