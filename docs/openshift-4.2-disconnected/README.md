@@ -210,7 +210,7 @@ Also, if needed and you haven't done so already, make sure you trust the self-si
 
 ```shell
 cp /opt/registry/certs/domain.crt /etc/pki/ca-trust/source/anchors/
-update-ca-trust extract
+update-ca-trust
 ```
 
 With this in place, you can mirror the images with the following command.
