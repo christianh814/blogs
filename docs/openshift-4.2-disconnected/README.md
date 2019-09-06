@@ -314,19 +314,21 @@ A good thing to do during the bootstrapping process is to login to the bootstrap
 [core@bootstrap ~]$ journalctl -b -f -u bootkube.service
 ```
 
-There are times where you might have to approve the worker/master node's CSR. You can check pending CSRs with the oc get csr command.This is important to check since the cluster operators won't finish without any worker nodes added. You can approve all the pending CSRs in one shot with the following command.
+There are times where you might have to approve the worker/master node's CSR. You can check pending CSRs with the `oc get csr` command.This is important to check since the cluster operators won't finish without any worker nodes added.
+
+You can approve all the pending CSRs in one shot with the following command.
 
 ```shell
 [user@bastion ~]$ oc get csr --no-headers | awk '{print $1}' | xargs oc adm certificate approve
 ```
 
-After the bootstrap process is done, it's helpful to see your cluster operators running. You can do this with the oc get co command. It's helpful to have this in a watch in a separate window
+After the bootstrap process is done, it's helpful to see your cluster operators running. You can do this with the `oc get co` command. It's helpful to have this in a watch in a separate window
 
 ```shell
 [user@bastion ~]$ watch oc get co
 ```
 
-The two most common issues is that the openshift-install command is waiting for the image-registry and ingress to come up before it considers the install a success. Make sure you've [approved the CSRs for your machines](https://docs.openshift.com/container-platform/4.1/installing/installing_bare_metal/installing-bare-metal.html#installation-approve-csrs_installing-bare-metal) and you've [configured storage for your image-registry](https://docs.openshift.com/container-platform/4.1/installing/installing_bare_metal/installing-bare-metal.html#installation-registry-storage-config_installing-bare-metal).
+The two most common issues is that the `openshift-install` command is waiting for the `image-registry` and `ingress` to come up before it considers the install a success. Make sure you've [approved the CSRs for your machines](https://docs.openshift.com/container-platform/4.1/installing/installing_bare_metal/installing-bare-metal.html#installation-approve-csrs_installing-bare-metal) and you've [configured storage for your image-registry](https://docs.openshift.com/container-platform/4.1/installing/installing_bare_metal/installing-bare-metal.html#installation-registry-storage-config_installing-bare-metal).
 
 The commands I've provided should help you navigate any issues you may have.
 
