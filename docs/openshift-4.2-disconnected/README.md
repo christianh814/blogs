@@ -112,8 +112,8 @@ export BUILDNUMBER=$(curl -s https://mirror.openshift.com/pub/openshift-v4/clien
 To download the client binaries to your staging server/area (in my case, it's the registry server itself) use `curl`:
 
 ```shell
-curl https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest/openshift-client-linux-${BUILDNUMBER}.tar.gz -o /var/www/html/
-curl https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest/openshift-install-linux-${BUILDNUMBER}.tar.gz -o /var/www/html/
+curl https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest/openshift-client-linux-${BUILDNUMBER}.tar.gz -O /var/www/html/
+curl https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest/openshift-install-linux-${BUILDNUMBER}.tar.gz -O /var/www/html/
 ```
 
 You'll also need these clients on your registry host, so feel free to un-tar them now.
@@ -130,9 +130,9 @@ Depending on what kind of install you will do, you would need to do one of the f
 If you're doing a PXE install, you'll need the BIOS, initramfs, and the kernel files.
 
 ```shell
-curl https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/latest/rhcos-${BUILDNUMBER}-metal-bios.raw.gz -o /var/www/html/
-curl https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/latest/rhcos-${BUILDNUMBER}-installer-initramfs.img -o /var/www/html/
-curl https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/latest/rhcos-${BUILDNUMBER}-installer-kernel -o /var/www/html/
+curl https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/latest/rhcos-${BUILDNUMBER}-metal-bios.raw.gz -O /var/www/html/
+curl https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/latest/rhcos-${BUILDNUMBER}-installer-initramfs.img -O /var/www/html/
+curl https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/latest/rhcos-${BUILDNUMBER}-installer-kernel -O /var/www/html/
 ```
 
 Once you have staged these, copy them over into your environment. Once they are in your PXE install server and your configuration updated, you can proceed to mirror your images.
@@ -142,8 +142,8 @@ Once you have staged these, copy them over into your environment. Once they are 
 If you're doing an ISO install, you'll still need the BIOS file but only the ISO for the install.
 
 ```shell
-curl https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/latest/rhcos-${BUILDNUMBER}-metal-bios.raw.gz -o /var/www/html/
-curl https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/latest/rhcos-${BUILDNUMBER}-installer.iso -o /var/www/html/
+curl https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/latest/rhcos-${BUILDNUMBER}-metal-bios.raw.gz -O /var/www/html/
+curl https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/latest/rhcos-${BUILDNUMBER}-installer.iso -O /var/www/html/
 ```
 
 Once these are staged, copy them over to where you'll need them for the installation. The BIOS file will need to be on a web server accessible to the OpenShift nodes. The ISO can be burned into a disk/usb drive or mounted via your virtualization platform.
