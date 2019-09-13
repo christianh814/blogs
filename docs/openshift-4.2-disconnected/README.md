@@ -89,7 +89,11 @@ If you have issues connecting try and stop the container.
 podman stop poc-registry
 ```
 
-Once it's down you can start it back up using the same `podman run` command as before.
+Once it's down you can start it back up using the the following `podman` command:
+
+```shell
+podman start poc-registry
+```
 
 ## Obtaining Artifacts
 
