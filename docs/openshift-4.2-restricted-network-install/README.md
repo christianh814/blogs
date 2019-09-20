@@ -1,14 +1,14 @@
-# OpenShift 4.2 Disconnected Install Preview
+# OpenShift 4.2 Restricted Network Installs
 
-In a [previous blog](https://blog.openshift.com/introducing-red-hat-openshift-4-2-in-developer-preview-releasing-nightly-builds/), it was announced that Red Hat is making  the OpenShift nightly builds available to everyone. This gives users a chance to test upcoming features before the general availability. One of the features planned for OpenShift 4.2 is the ability to perform a "disconnected" or "air gapped" install, allowing you to install in an environment without access to the internet or otherwise restricted.
+In a [previous blog](https://blog.openshift.com/introducing-red-hat-openshift-4-2-in-developer-preview-releasing-nightly-builds/), it was announced that Red Hat is making  the OpenShift nightly builds available to everyone. This gives users a chance to test upcoming features before the general availability. One of the features planned for OpenShift 4.2 is the ability to perform an install on restricted networks, allowing you to install on an environment with limited access to the internet or otherwise restricted.
 
 **NOTE: that nightly builds are unsupported and are for testing purposes only!**
 
-In this blog I will be going over how to perform a disconnected install in a lab environment. I will also give an overview of my environment, how to mirror the needed images, and any other tips and tricks I've learned along the way.
+In this blog I will be going over how to perform an install in a lab environment with limited access to the internet. I will also give an overview of my environment, how to mirror the needed images, and any other tips and tricks I've learned along the way.
 
 ## Environment Overview
 
-In my environment, I have two networks. One network is completely disconnected and has no access to the internet. The other network is connected to the internet and has full access. I will use a bastion host that has access to both networks. This bastion host will perform the following functions.
+In my environment, I have two networks. One network has limited access to the internet. The other network is connected to the internet and has full access. I will use a bastion host that has access to both networks. This bastion host will perform the following functions.
 
 * Registry server (where I will mirror the content)
 * Apache web server (where I will store installation artifacts)
@@ -21,7 +21,7 @@ Here is a high-level overview of the environment I'll be working on.
 In my environment, I have already set up DNS, DHCP, and other ancillary services for my network. Also, it's important to get familiar with the [OpenShift 4 prerequisites](https://docs.openshift.com/container-platform/4.1/installing/installing_bare_metal/installing-bare-metal.html#installation-infrastructure-user-infra_installing-bare-metal) before attempting an install.
 
 
-Doing a disconnected install can be challenging, so I recommend trying a [fully connected OpenShift 4 install](https://blog.openshift.com/openshift-4-bare-metal-install-quickstart/) first to familiarize yourself with the install process (as they are quite similar).
+Doing an install on a restricted network can be challenging, so I recommend trying a [fully connected OpenShift 4 install](https://blog.openshift.com/openshift-4-bare-metal-install-quickstart/) first to familiarize yourself with the install process (as they are quite similar).
 
 ## Registry Set Up
 
@@ -97,7 +97,7 @@ podman start poc-registry
 
 ## Obtaining Artifacts
 
-You will need the preview builds for 4.2 in order to do a disconnected install. Specifically, you will need the client binaries along with the install artifacts. This can be found in the dev preview links provided below.
+You will need the preview builds for 4.2 in order to do a network restricted install. Specifically, you will need the client binaries along with the install artifacts. This can be found in the dev preview links provided below.
 
 * [Client Binaries](https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest/)
 * [Install Artifacts](https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/latest/)
@@ -168,21 +168,21 @@ First, you will need to get the information to mirror. This information can be o
 
 ```
 export OCP_RELEASE="4.2.0-0.nightly-2019-08-29-062233"
-export AIRGAP_REG='registry.ocp4.example.com:5000'
-export AIRGAP_REPO='ocp4/openshift4'
+export LOCAL_REG='registry.ocp4.example.com:5000'
+export LOCAL_REPO='ocp4/openshift4'
 export UPSTREAM_REPO='openshift-release-dev'
-export AIRGAP_SECRET_JSON="${HOME}/pull-secret-2.json"
-export OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE=${AIRGAP_REG}/${AIRGAP_REPO}:${OCP_RELEASE}
+export LOCAL_SECRET_JSON="${HOME}/pull-secret-2.json"
+export OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE=${LOCAL_REG}/${LOCAL_REPO}:${OCP_RELEASE}
 export RELEASE_NAME="ocp-release-nightly"
 ```
 
 I will go over how to construct these environment variables from the [release notes](https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest/release.txt)
 
 * `OCP_RELEASE` - Can be obtained by the `Release Metadata.Version` section of the release page.
-* `AIRGAP_REG` - This is your registry's hostname with port
-* `AIRGAP_REPO` - This is the name of the repo in your registry (you don't have to create it beforehand)
+* `LOCAL_REG` - This is your registry's hostname with port
+* `LOCAL_REPO` - This is the name of the repo in your registry (you don't have to create it beforehand)
 * `UPSTREAM_REPO` - Can be obtianed from the `Pull From` section of the release page.
-* `AIRGAP_SECRET_JSON` - This is the path to your pull secret  with your registry's information (which we will create later)
+* `LOCAL_SECRET_JSON` - This is the path to your pull secret  with your registry's information (which we will create later)
 * `OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE` - This environment variable is set so the installer knows to use your registry.
 * `RELEASE_NAME` - This can be obtained in the `Pull From` section of the release page.
 
@@ -220,9 +220,9 @@ update-ca-trust
 With this in place, you can mirror the images with the following command.
 
 ```shell
-oc adm release mirror -a ${AIRGAP_SECRET_JSON} \
+oc adm release mirror -a ${LOCAL_SECRET_JSON} \
 --from=quay.io/${UPSTREAM_REPO}/${RELEASE_NAME}:${OCP_RELEASE} \
---to=${AIRGAP_REG}/${AIRGAP_REPO} --to-release-image=${AIRGAP_REG}/${AIRGAP_REPO}:${OCP_RELEASE}
+--to=${LOCAL_REG}/${LOCAL_REPO} --to-release-image=${LOCAL_REG}/${LOCAL_REPO}:${OCP_RELEASE}
 ```
 
 Part of the output will have an example `imageContentSources` to put in your `install-config.yaml` file. It'll look something like this.
@@ -291,7 +291,7 @@ Some things to note here:
 * `additionalTrustBundle` - this is your crt file for your registry. (i.e. the output of `cat domain.crt`)
 * `imageContentSources` -  What is the local registry is and the expected original source that should be in the metadata (otherwise they should be considered as tampered)
 
-You will also need to export the `OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE` environment variable. This tells OpenShift which image to use for bootstraping. This is in the form of `${AIRGAP_REG}/${AIRGAP_REPO}:${OCP_RELEASE}`. It looked like this in my environment.
+You will also need to export the `OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE` environment variable. This tells OpenShift which image to use for bootstraping. This is in the form of `${LOCAL_REG}/${LOCAL_REPO}:${OCP_RELEASE}`. It looked like this in my environment.
 
 ```shell
 export OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE=registry.ocp4.example.com:5000/ocp4/openshift4:4.2.0-0.nightly-2019-08-29-062233
@@ -338,7 +338,6 @@ The commands I've provided should help you navigate any issues you may have.
 
 ## Conclusion
 
-In this blog, I went over how you can prepare for a disconnected install and how to perform a disconnected install using the nightly developer preview of OpenShift 4. Disconnected installs was a highly popular request for OpenShift 4, and we are excited to bring you a preview build.
+In this blog, I went over how you can prepare for a restricted network install and how to perform the install using the nightly developer preview of OpenShift 4. Restricted network installs was a highly popular request for OpenShift 4, and we are excited to bring you a preview build.
 
-Nightly builds are a great way to preview what's up and coming with OpenShift, so you can test things before the GA release. We are excited to bring you this capability and hope that you find it useful. If you have any questions or comments, feel free to use the comment section below!
-
+Nightly builds are a great way to preview what's up and coming with OpenShift, so you can test things before the GA release. We are excited to bring you this capability and hope that you find it useful. If you have any questions or comments, feel free to use the comment section below!  
