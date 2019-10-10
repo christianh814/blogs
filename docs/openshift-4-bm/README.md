@@ -366,7 +366,7 @@ coreos.inst.ignition_url=http://192.168.7.77:8080/ignition/bootstrap-static.ign
 
 ![isoinstall](images/rhcos-tab-install.png)
 
-Syntax for the `ip=` portion is: `ip=<ipaddress>::<defaultgw>:<netmask>:<hostname>:<iface>:none:<dns server>`
+Syntax for the `ip=` portion is: `ip=<ipaddress>::<defaultgw>:<netmask>:<hostname>:<iface>:none:<dns server 1>:<dns server 2>`
 
 ### Finishing Up The Install
 
