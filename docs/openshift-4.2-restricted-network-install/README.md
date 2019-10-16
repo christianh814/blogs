@@ -2,7 +2,7 @@
 
 In a [previous blog](https://blog.openshift.com/introducing-red-hat-openshift-4-2-in-developer-preview-releasing-nightly-builds/), it was announced that Red Hat is making  the OpenShift nightly builds available to everyone. This gives users a chance to test upcoming features before the general availability. One of the features planned for OpenShift 4.2 is the ability to perform an install on restricted networks, allowing you to install on an environment with limited access to the internet or otherwise restricted.
 
-**NOTE: that nightly builds are unsupported and are for testing purposes only!**
+**NOTE: OCP 4.2 has been released and official documentation can be found [here](https://docs.openshift.com/container-platform/4.2/installing/installing_restricted_networks/installing-restricted-networks-preparations.html)**
 
 In this blog I will be going over how to perform an install in a lab environment with limited access to the internet. I will also give an overview of my environment, how to mirror the needed images, and any other tips and tricks I've learned along the way.
 
@@ -18,7 +18,7 @@ Here is a high-level overview of the environment I'll be working on.
 
 ![disconnected-diag](images/disconnected-diagram.jpg)
 
-In my environment, I have already set up DNS, DHCP, and other ancillary services for my network. Also, it's important to get familiar with the [OpenShift 4 prerequisites](https://docs.openshift.com/container-platform/4.1/installing/installing_bare_metal/installing-bare-metal.html#installation-infrastructure-user-infra_installing-bare-metal) before attempting an install.
+In my environment, I have already set up DNS, DHCP, and other ancillary services for my network. Also, it's important to get familiar with the [OpenShift 4 prerequisites](https://docs.openshift.com/container-platform/4.2/installing/installing_bare_metal/installing-bare-metal.html#installation-infrastructure-user-infra_installing-bare-metal) before attempting an install.
 
 
 Doing an install on a restricted network can be challenging, so I recommend trying a [fully connected OpenShift 4 install](https://blog.openshift.com/openshift-4-bare-metal-install-quickstart/) first to familiarize yourself with the install process (as they are quite similar).
@@ -167,13 +167,13 @@ The installation images will need to be mirrored in order to complete the instal
 First, you will need to get the information to mirror. This information can be obtained via the dev-preview [release notes](https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest/release.txt). With this information, I constructed the following environment variables.  
 
 ```
-export OCP_RELEASE="4.2.0-0.nightly-2019-08-29-062233"
+export OCP_RELEASE="4.2.0"
 export LOCAL_REG='registry.ocp4.example.com:5000'
 export LOCAL_REPO='ocp4/openshift4'
 export UPSTREAM_REPO='openshift-release-dev'
 export LOCAL_SECRET_JSON="${HOME}/pull-secret-2.json"
 export OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE=${LOCAL_REG}/${LOCAL_REPO}:${OCP_RELEASE}
-export RELEASE_NAME="ocp-release-nightly"
+export RELEASE_NAME="ocp-release"
 ```
 
 I will go over how to construct these environment variables from the [release notes](https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest/release.txt)
@@ -243,7 +243,7 @@ Save this output, as you'll need it later
 
 At this point you can proceed with the normal installation procedure, with the main difference being what you specify in the `install-config.yaml` file when you create the ignition configs. 
 
-Please refer to the [official documentation](https://docs.openshift.com/container-platform/4.1/welcome/index.html) for specific installation information. You're most likely doing a Bare Metal install, so my [previous blog](https://blog.openshift.com/openshift-4-bare-metal-install-quickstart/) would be helpful to look over as well.
+Please refer to the [official documentation](https://docs.openshift.com/container-platform/4.2/welcome/index.html) for specific installation information. You're most likely doing a Bare Metal install, so my [previous blog](https://blog.openshift.com/openshift-4-bare-metal-install-quickstart/) would be helpful to look over as well.
 
 When creating an `install-config.yaml` file, you need to specify additional parameters like the example below.
 
@@ -297,7 +297,16 @@ You will also need to export the `OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE` envi
 export OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE=registry.ocp4.example.com:5000/ocp4/openshift4:4.2.0-0.nightly-2019-08-29-062233
 ```
 
-I created my `install-config.yaml` under the `/root/ocp4` directory. At this point you can create your ignition configs
+I created my `install-config.yaml` under the `/root/ocp4` directory. At this point you can create your manifests
+
+```shell
+$ openshift-install create ignition-configs --dir=/root/ocp4
+```
+
+Modify the `/root/ocp4/manifests/cluster-scheduler-02-config.yml` manifest file to prevent Pods from being scheduled on the control plane machines by editing the file and setting `mastersSchedulable` parameter to `flase`.
+
+
+Now, create your ignition configs
 
 ```shell
 $ openshift-install create ignition-configs --dir=/root/ocp4
@@ -308,7 +317,7 @@ WARNING Found override for ReleaseImage. Please be warned, this is not advised
 
 Please note that it warns you about overriding the image and that for the 4.2 dev preview, that the masters are schedulable.
 
-At this point, you can proceed with the installation [as you would normally](https://docs.openshift.com/container-platform/4.1/installing/installing_bare_metal/installing-bare-metal.html#installation-generate-ignition-configs_installing-bare-metal).
+At this point, you can proceed with the installation [as you would normally](https://docs.openshift.com/container-platform/4.2/installing/installing_bare_metal/installing-bare-metal.html#installation-generate-ignition-configs_installing-bare-metal).
 
 ## Troubleshooting
 
@@ -332,7 +341,7 @@ After the bootstrap process is done, it's helpful to see your cluster operators 
 [user@bastion ~]$ watch oc get co
 ```
 
-The two most common issues is that the `openshift-install` command is waiting for the `image-registry` and `ingress` to come up before it considers the install a success. Make sure you've [approved the CSRs for your machines](https://docs.openshift.com/container-platform/4.1/installing/installing_bare_metal/installing-bare-metal.html#installation-approve-csrs_installing-bare-metal) and you've [configured storage for your image-registry](https://docs.openshift.com/container-platform/4.1/installing/installing_bare_metal/installing-bare-metal.html#installation-registry-storage-config_installing-bare-metal).
+The two most common issues is that the `openshift-install` command is waiting for the `image-registry` and `ingress` to come up before it considers the install a success. Make sure you've [approved the CSRs for your machines](https://docs.openshift.com/container-platform/4.2/installing/installing_bare_metal/installing-bare-metal.html#installation-approve-csrs_installing-bare-metal) and you've [configured storage for your image-registry](https://docs.openshift.com/container-platform/4.2/installing/installing_bare_metal/installing-bare-metal.html#installation-registry-storage-config_installing-bare-metal).
 
 The commands I've provided should help you navigate any issues you may have.
 
