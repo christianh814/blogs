@@ -300,7 +300,7 @@ export OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE=registry.ocp4.example.com:5000/o
 I created my `install-config.yaml` under the `/root/ocp4` directory. At this point you can create your manifests
 
 ```shell
-$ openshift-install create ignition-configs --dir=/root/ocp4
+$ openshift-install create manifests --dir=/root/ocp4
 ```
 
 Modify the `/root/ocp4/manifests/cluster-scheduler-02-config.yml` manifest file to prevent Pods from being scheduled on the control plane machines by editing the file and setting `mastersSchedulable` parameter to `flase`.
