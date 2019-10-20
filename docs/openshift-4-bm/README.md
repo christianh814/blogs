@@ -261,68 +261,13 @@ tree .
 └── worker.ign
 ```
 
-You will need to do one of the following, depending on what kind of installation you're doing.
 
-#### DHCP
-
-If you're using DHCP, simply copy over the ignition files to your webserver. For example, this is what I did for my installation.
+Now, simply copy over the ignition files to your webserver. For example, this is what I did for my installation.
 
 ```
 scp ~/ocp4/*.ign webserver.example.com:/var/www/html/ignition/
 ```
 
-#### Static IPs
-
-For static IPs; you need to generate new ignition files based on the ones that the OpenShift installer generated. You can use the [filetranspiler](https://github.com/ashcrow/filetranspiler) tool in order to make this process a little easier. When using `filetranspiler` you first need to create a "fakeroot" filesystem. This is an example form the bootstrap node.
-
-```
-cat <<EOF > bootstrap/etc/sysconfig/network-scripts/ifcfg-enp1s0
-DEVICE=enp1s0
-BOOTPROTO=none
-ONBOOT=yes
-IPADDR=192.168.7.20
-NETMASK=255.255.255.0
-GATEWAY=192.168.7.1
-DNS1=192.168.7.77
-DNS2=8.8.8.8
-DOMAIN=ocp4.example.com
-PREFIX=24
-DEFROUTE=yes
-IPV6INIT=no
-EOF
-```
-
-**NOTE**: Your interface WILL probably differ, be sure to determine the persistent name of the device(s) before creating the network configuration files.
-
-Using `filetranspiler`, create a new ignition file based on the one created by `openshift-install`. Continuing with the example of my bootstrap server; it looks like this.
-
-```
-filetranspiler -i bootstrap.ign -f bootstrap -o bootstrap-static.ign
-```
-
-The syntax is: `filetranspiler -i <original ign file> -f <fakeroot> -o <output ign file>`
-
-NOTE: If you're using the container version of `filetranspiler`, you need to be in the directory where these files/dirs are. In other words, absolute paths won't work.
-
-Once you created the new file, copy it over to your webserver:
-
-```
-scp ~/ocp4/bootstrap-static.ign webserver.example.com:/var/www/html/ignition/
-```
-
-**__IMPORTANT__**: When using static IP addresses, you will need to do this for **ALL** nodes in your cluster. In my environment I ended up with six ignition files.
-
-```
-tree /var/www/html/ignition/
-├── bootstrap-static.ign
-├── master0.ign
-├── master1.ign
-├── master2.ign
-├── worker0.ign
-└── worker1.ign
-
-0 directories, 6 files
-```
 ### Install Red Hat Enterprise Linux CoreOS
 
 Installing RHEL CoreOS (RHCOS) is a straightforward process. Depending on which method you are doing (DHCP or Static IPs); choose one of the following.
@@ -356,7 +301,8 @@ Just like the DHCP method, boot from the ISO, and you'll be greeted with the fol
 Once you see this menu, press tab and enter the options that will image the node using the bios file you downloaded, and prepare the node using the ignition file you'll provide. Here is an example that I did for my bootstrap server.
 
 ```
-ip=192.168.7.20::192.168.7.1:255.255.255.0:bootstrap:enp1s0:none:192.168.7.77
+ip=192.168.7.20::192.168.7.1:255.255.255.0:bootstrap:enp1s0:none
+nameserver=192.168.7.77
 coreos.inst.install_dev=vda
 coreos.inst.image_url=http://192.168.7.77:8080/install/rhcos-4.1.0-x86_64-metal-bios.raw.gz
 coreos.inst.ignition_url=http://192.168.7.77:8080/ignition/bootstrap-static.ign
@@ -366,7 +312,11 @@ coreos.inst.ignition_url=http://192.168.7.77:8080/ignition/bootstrap-static.ign
 
 ![isoinstall](images/rhcos-tab-install.png)
 
-Syntax for the `ip=` portion is: `ip=<ipaddress>::<defaultgw>:<netmask>:<hostname>:<iface>:none:<dns server 1>:<dns server 2>`
+Syntax for the `ip=` and `nameserver=` portion is: `ip=<ipaddress>::<defaultgw>:<netmask>:<hostname>:<iface>:none` and `nameserver=<dns server 1> nameserver=<dns server 2>`
+
+> **NOTE**: You can pass `nameserver=` multiple times
+
+Doing this on OpenShift 4.2 will persist your network configurations accross reboots
 
 ### Finishing Up The Install
 
