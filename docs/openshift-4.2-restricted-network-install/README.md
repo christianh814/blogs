@@ -1,6 +1,6 @@
 # OpenShift 4.2 Restricted Network Installs
 
-In a [previous blog](https://blog.openshift.com/introducing-red-hat-openshift-4-2-in-developer-preview-releasing-nightly-builds/), it was announced that Red Hat is making  the OpenShift nightly builds available to everyone. This gives users a chance to test upcoming features before the general availability. One of the features planned for OpenShift 4.2 is the ability to perform an install on restricted networks, allowing you to install on an environment with limited access to the internet or otherwise restricted.
+In a [previous blog](https://blog.openshift.com/introducing-red-hat-openshift-4-2-in-developer-preview-releasing-nightly-builds/), it was announced that Red Hat is making  the OpenShift nightly builds available to everyone. This gives users a chance to test upcoming features before the general availability. One of the features in OpenShift 4.2 is the ability to perform an install on restricted networks, allowing you to install on an environment with limited to no access to the internet or otherwise restricted.
 
 **NOTE: OCP 4.2 has been released and official documentation can be found [here](https://docs.openshift.com/container-platform/4.2/installing/installing_restricted_networks/installing-restricted-networks-preparations.html)**
 
@@ -97,30 +97,25 @@ podman start poc-registry
 
 ## Obtaining Artifacts
 
-You will need the preview builds for 4.2 in order to do a network restricted install. Specifically, you will need the client binaries along with the install artifacts. This can be found in the dev preview links provided below.
+You will need to download the artifacts specifc to version 4.2 in order to do a network restricted install. Specifically, you will need the client binaries along with the install artifacts. This can be found using the links below.
 
-* [Client Binaries](https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest/)
-* [Install Artifacts](https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/latest/)
+* [Client Binaries](https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/)
+* [Install Artifacts](https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.2/latest/)
 
-Download the binaries and any installation artifacts you may need for the installation. The file names will differ depending on when you choose to download the preview builds (they get updated often).
+Download the binaries and any installation artifacts you may need for the installation. The file names will differ depending on when you choose to download the artifacts.
 
-You can inspect the [nightly release notes](https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest/release.txt) and extract the build number you need from there. I did this with the `curl` command.
-
-```
-export BUILDNUMBER=$(curl -s https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest/release.txt | grep 'Name:' | awk '{print $NF}')
-```
 To download the client binaries to your staging server/area (in my case, it's the registry server itself) use `wget`:
 
 ```shell
-wget https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest/openshift-client-linux-${BUILDNUMBER}.tar.gz -P /var/www/html/
-wget https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest/openshift-install-linux-${BUILDNUMBER}.tar.gz -P /var/www/html/
+wget https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux-4.2.0.tar.gz -P /var/www/html/
+wget https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-install-linux-4.2.0.tar.gz -P /var/www/html/
 ```
 
 You'll also need these clients on your registry host, so feel free to un-tar them now.
 
 ```shell
-tar -xzf /var/www/html/openshift-client-linux-${BUILDNUMBER}.tar.gz -C /usr/local/bin/
-tar -xzf /var/www/html/openshift-install-linux-${BUILDNUMBER}.tar.gz -C /usr/local/bin/
+tar -xzf /var/www/html/openshift-client-linux-4.2.0.tar.gz -C /usr/local/bin/
+tar -xzf /var/www/html/openshift-install-linux-4.2.0.tar.gz -C /usr/local/bin/
 ```
 
 Depending on what kind of install you will do, you would need to do one of the following.
@@ -130,9 +125,9 @@ Depending on what kind of install you will do, you would need to do one of the f
 If you're doing a PXE install, you'll need the BIOS, initramfs, and the kernel files.
 
 ```shell
-wget https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/latest/rhcos-${BUILDNUMBER}-metal-bios.raw.gz -P /var/www/html/
-wget https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/latest/rhcos-${BUILDNUMBER}-installer-initramfs.img -P /var/www/html/
-wget https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/latest/rhcos-${BUILDNUMBER}-installer-kernel -P /var/www/html/
+wget https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.2/latest/rhcos-4.2.0-x86_64-metal-bios.raw.gz -P /var/www/html/
+wget https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.2/latest/rhcos-4.2.0-x86_64-installer-initramfs.img -P /var/www/html/
+wget https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.2/latest/rhcos-4.2.0-x86_64-installer-kernel -P /var/www/html/
 ```
 
 Once you have staged these, copy them over into your environment. Once they are in your PXE install server and your configuration updated, you can proceed to mirror your images.
@@ -142,14 +137,13 @@ Once you have staged these, copy them over into your environment. Once they are 
 If you're doing an ISO install, you'll still need the BIOS file but only the ISO for the install.
 
 ```shell
-wget https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/latest/rhcos-${BUILDNUMBER}-metal-bios.raw.gz -P /var/www/html/
-wget https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/pre-release/latest/rhcos-${BUILDNUMBER}-installer.iso -P /var/www/html/
+wget https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.2/latest/rhcos-4.2.0-x86_64-metal-bios.raw.gz -P /var/www/html/
+wget https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.2/latest/rhcos-4.2.0-x86_64-installer.iso -P /var/www/html/
 ```
 
 Once these are staged, copy them over to where you'll need them for the installation. The BIOS file will need to be on a web server accessible to the OpenShift nodes. The ISO can be burned into a disk/usb drive or mounted via your virtualization platform.
 
 Once that's done, you can proceed to mirror the container images.
-
 
 ## Mirroring Images
 
@@ -164,7 +158,7 @@ The installation images will need to be mirrored in order to complete the instal
 * The `oc` and `openshift-install` CLI tools installed
 * The `jq` command is also helpful
 
-First, you will need to get the information to mirror. This information can be obtained via the dev-preview [release notes](https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest/release.txt). With this information, I constructed the following environment variables.  
+First, you will need to set the following environment variables
 
 ```
 export OCP_RELEASE="4.2.0"
@@ -176,15 +170,13 @@ export OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE=${LOCAL_REG}/${LOCAL_REPO}:${OCP
 export RELEASE_NAME="ocp-release"
 ```
 
-I will go over how to construct these environment variables from the [release notes](https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/latest/release.txt)
-
-* `OCP_RELEASE` - Can be obtained by the `Release Metadata.Version` section of the release page.
+* `OCP_RELEASE` - The the version of OpenShift you want to sync (In this example; `4.2.0`)
 * `LOCAL_REG` - This is your registry's hostname with port
 * `LOCAL_REPO` - This is the name of the repo in your registry (you don't have to create it beforehand)
-* `UPSTREAM_REPO` - Can be obtianed from the `Pull From` section of the release page.
-* `LOCAL_SECRET_JSON` - This is the path to your pull secret  with your registry's information (which we will create later)
+* `UPSTREAM_REPO` - Where the images are hosted in the upstream repo. IN this case it's `openshift-release-dev`
+* `LOCAL_SECRET_JSON` - This is the path to your pull secret with your registry's information (which we will create later)
 * `OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE` - This environment variable is set so the installer knows to use your registry.
-* `RELEASE_NAME` - This can be obtained in the `Pull From` section of the release page.
+* `RELEASE_NAME` - This is the name of the image release. In this case `ocp-release`
 
 Before you can mirror the images, you'll need to add the authentication for your registry in your pull secret file (the one you got from [try.openshift.com](https://try.openshift.com)). This will look like this:
 
@@ -294,7 +286,7 @@ Some things to note here:
 You will also need to export the `OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE` environment variable. This tells OpenShift which image to use for bootstraping. This is in the form of `${LOCAL_REG}/${LOCAL_REPO}:${OCP_RELEASE}`. It looked like this in my environment.
 
 ```shell
-export OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE=registry.ocp4.example.com:5000/ocp4/openshift4:4.2.0-0.nightly-2019-08-29-062233
+export OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE=registry.ocp4.example.com:5000/ocp4/openshift4:4.2.0
 ```
 
 I created my `install-config.yaml` under the `/root/ocp4` directory. At this point you can create your manifests
@@ -303,19 +295,30 @@ I created my `install-config.yaml` under the `/root/ocp4` directory. At this poi
 $ openshift-install create manifests --dir=/root/ocp4
 ```
 
-Modify the `/root/ocp4/manifests/cluster-scheduler-02-config.yml` manifest file to prevent Pods from being scheduled on the control plane machines by editing the file and setting `mastersSchedulable` parameter to `flase`.
+Modify the `/root/ocp4/manifests/cluster-scheduler-02-config.yml` manifest file to prevent Pods from being scheduled on the control plane machines by editing the file and setting `mastersSchedulable` parameter to `flase`. It should look like this...
 
+```shell
+$ cat manifests/cluster-scheduler-02-config.yml
+apiVersion: config.openshift.io/v1
+kind: Scheduler
+metadata:
+  creationTimestamp: null
+  name: cluster
+spec:
+  mastersSchedulable: false
+  policy:
+    name: ""
+status: {}
+```
 
 Now, create your ignition configs
 
 ```shell
 $ openshift-install create ignition-configs --dir=/root/ocp4
-INFO Consuming "Install Config" from target directory 
-WARNING Making control-plane schedulable by setting MastersSchedulable to true for Scheduler cluster settings 
 WARNING Found override for ReleaseImage. Please be warned, this is not advised 
 ```
 
-Please note that it warns you about overriding the image and that for the 4.2 dev preview, that the masters are schedulable.
+Please note that it warns you about overriding the image.
 
 At this point, you can proceed with the installation [as you would normally](https://docs.openshift.com/container-platform/4.2/installing/installing_bare_metal/installing-bare-metal.html#installation-generate-ignition-configs_installing-bare-metal).
 
@@ -347,6 +350,4 @@ The commands I've provided should help you navigate any issues you may have.
 
 ## Conclusion
 
-In this blog, I went over how you can prepare for a restricted network install and how to perform the install using the nightly developer preview of OpenShift 4. Restricted network installs was a highly popular request for OpenShift 4, and we are excited to bring you a preview build.
-
-Nightly builds are a great way to preview what's up and coming with OpenShift, so you can test things before the GA release. We are excited to bring you this capability and hope that you find it useful. If you have any questions or comments, feel free to use the comment section below!  
+In this blog, I went over how you can prepare for a restricted network on OpenShift 4.2. Restricted network installs was a highly popular request for OpenShift 4, and we are excited to bring you this capability! We hope that you find it useful!
