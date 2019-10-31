@@ -166,6 +166,7 @@ export LOCAL_REG='registry.ocp4.example.com:5000'
 export LOCAL_REPO='ocp4/openshift4'
 export UPSTREAM_REPO='openshift-release-dev'
 export LOCAL_SECRET_JSON="${HOME}/pull-secret-2.json"
+export OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE=${LOCAL_REG}/${LOCAL_REPO}:${OCP_RELEASE}
 export RELEASE_NAME="ocp-release"
 ```
 
@@ -174,6 +175,7 @@ export RELEASE_NAME="ocp-release"
 * `LOCAL_REPO` - This is the name of the repo in your registry (you don't have to create it beforehand)
 * `UPSTREAM_REPO` - Where the images are hosted in the upstream repo. IN this case it's `openshift-release-dev`
 * `LOCAL_SECRET_JSON` - This is the path to your pull secret with your registry's information (which we will create later)
+* `OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE` - This environment variable is set so the installer knows to use your registry.
 * `RELEASE_NAME` - This is the name of the image release. In this case `ocp-release`
 
 Before you can mirror the images, you'll need to add the authentication for your registry in your pull secret file (the one you got from [try.openshift.com](https://try.openshift.com)). This will look like this:
@@ -280,6 +282,12 @@ Some things to note here:
 * `sshKey` - the contents of your `id_rsa.pub` file (or another ssh public key that you want to use)
 * `additionalTrustBundle` - this is your crt file for your registry. (i.e. the output of `cat domain.crt`)
 * `imageContentSources` -  What is the local registry is and the expected original source that should be in the metadata (otherwise they should be considered as tampered)
+
+You will also need to export the `OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE` environment variable. This tells OpenShift which image to use for bootstraping. This is in the form of `${LOCAL_REG}/${LOCAL_REPO}:${OCP_RELEASE}`. It looked like this in my environment.
+
+```shell
+export OPENSHIFT_INSTALL_RELEASE_IMAGE_OVERRIDE=registry.ocp4.example.com:5000/ocp4/openshift4:4.2.0
+```
 
 I created my `install-config.yaml` under the `/root/ocp4` directory. At this point you can create your manifests
 
