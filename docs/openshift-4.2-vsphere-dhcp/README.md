@@ -224,11 +224,11 @@ The next screen asks to select a destination virtual network, I am using the def
 
 ![destinationvirtnet](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-dhcp/images/5.vmnetworkdefaults.png)
 
-After clicking “Next”, the “Customize Template” section comes up. We won’t be customizing the template here, so leave these blank and click “Next”.
+After clicking "Next", the "Customize Template" section comes up. We won't be customizing the template here, so leave these blank and click "Next".
 
 ![cutimzetemplatepage](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-dhcp/images/6.customizetemplatepage.png)
 
-The next page will give you an overview with the title “Ready To Complete”, click “Next” to finish the importing of the OVA.
+The next page will give you an overview with the title "Ready To Complete", click "Next" to finish the importing of the OVA.
 
 ![readytocompleteova](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-dhcp/images/7.readytocompleteova.png)
 
@@ -236,15 +236,15 @@ The OVA template should be in your cluster folder. It should look something like
 
 ![importedova](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-dhcp/images/8.importedova.png)
 
-Next, right click the imported OVA and select “Edit Settings”. The “Edit Settings” dialog box appears and should look like this:
+Next, right click the imported OVA and select "Edit Settings". The "Edit Settings" dialog box appears and should look like this:
 
 ![editova](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-dhcp/images/13.editova.png)
 
-Click on the “VM Options” and expand the “Advanced” section. Set “Latency Sensitivity” to “High”.
+Click on the "VM Options" and expand the "Advanced" section. Set "Latency Sensitivity" to "High".
 
 ![latencysens](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-dhcp/images/14.latencysensitivity.png)
 
-Next, click on “Edit Configuration…” next to the “Configuration Parameters” section. You will add the following:
+Next, click on "Edit Configuration…" next to the "Configuration Parameters" section. You will add the following:
 
 * `guestinfo.ignition.config.data` and set the value to `chageme`
 * `guestinfo.ignition.config.data.encoding` set this value to `base64`
@@ -254,25 +254,25 @@ It should look something like this:
 
 ![configparam](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-dhcp/images/15.configparameters.png)
 
-Click “OK” to go back to the “VM Options” page and then click “OK” again to save these settings.
+Click "OK" to go back to the "VM Options" page and then click "OK" again to save these settings.
 
-Now, right click the imported OVA and select `Clone` → `Clone to Template`. The “Clone Virtual Machine To Template” wizard starts. It'll ask you to name this template and where to store it. I will be creating the master template first so I will name it “master-template” and save it in my “openshift4” folder. You can also convert this OVA to a template as well.
+Now, right click the imported OVA and select `Clone` → `Clone to Template`. The "Clone Virtual Machine To Template" wizard starts. It'll ask you to name this template and where to store it. I will be creating the master template first so I will name it "master-template" and save it in my "openshift4" folder. You can also convert this OVA to a template as well.
 
 ![startmastertemp](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-dhcp/images/9.startmastertemplatewizard.png)
 
-On the next screen select a compute destination. Choose one of your ESXi hosts, and click “Next”.
+On the next screen select a compute destination. Choose one of your ESXi hosts, and click "Next".
 
-On the following screen,  select the appropriate datastore for your environment (make sure you select “Thin” as the disk format) and click “Next”.
+On the following screen,  select the appropriate datastore for your environment (make sure you select "Thin" as the disk format) and click "Next".
 
 ![masterdest](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-dhcp/images/10.mastertemplatestoragedestinationthin.png)
 
-Next, there will be the “Ready to complete” page, giving you an overview.
+Next, there will be the "Ready to complete" page, giving you an overview.
 
 ![readycompmatemp](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-dhcp/images/11.redytocompletemastertemplatecreation.png)
 
-Click on “Finish” to finish the creation of the master template. 
+Click on "Finish" to finish the creation of the master template. 
 
-Now you will do the same steps **_AGAIN_**, except you'll be creating a template for the workers/bootstrap nodes. I named this template “worker-bootstrap-template”. When you are finished, you should have something like this.
+Now you will do the same steps **_AGAIN_**, except you'll be creating a template for the workers/bootstrap nodes. I named this template "worker-bootstrap-template". When you are finished, you should have something like this.
 
 ![finishtemplates](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-dhcp/images/12.finishtemplatecreation.png)
 
@@ -280,14 +280,14 @@ Now you will do the same steps **_AGAIN_**, except you'll be creating a template
 
 ### Generate Install Configuration 
 
-Now that you’ve prepped vSphere for installation. You can go ahead and generate the `install-config.yaml` file. This file tells OpenShift about the environment that you’re going to install. Before you create this file you’ll need an installation directory to store all your artifacts. You can name this directory whatever you like; I’m going to name mine `openshift4`.
+Now that you've prepped vSphere for installation. You can go ahead and generate the `install-config.yaml` file. This file tells OpenShift about the environment that you're going to install. Before you create this file you'll need an installation directory to store all your artifacts. You can name this directory whatever you like; I'm going to name mine `openshift4`.
 
 ```
 [chernand@laptop ~]$ mkdir openshift4
 [chernand@laptop ~]$ cd openshift4/
 ```
 
-I’m going to export some environment variables that will make the creation of the `install-config.yaml` file easier. Please substitute your configuration where applicable.
+I'm going to export some environment variables that will make the creation of the `install-config.yaml` file easier. Please substitute your configuration where applicable.
 
 ```
 [chernand@laptop openshift4]$ export DOMAIN=example.com
@@ -301,7 +301,7 @@ I’m going to export some environment variables that will make the creation of 
 [chernand@laptop openshift4]$ export OCP_SSH_KEY=$(< ~/.ssh/id_rsa.pub)
 ```
 
-Once you’ve exported those, go ahead and create the `install-config.yaml` file in the openshift4 directory by running the following:
+Once you've exported those, go ahead and create the `install-config.yaml` file in the openshift4 directory by running the following:
 
 ```
 [chernand@laptop openshift4]$ cat <<EOF > install-config.yaml
@@ -336,12 +336,12 @@ sshKey: '${OCP_SSH_KEY}'
 EOF
 ```
 
-I’m going over the options at a high level:
+I'm going over the options at a high level:
 
 * `baseDomain` - This is the domain of your environment.
 * `metadata.name` - This is your clusterid
   * Note: this makes all FQDNS in the `openshift4.example.com` domain.
-* `platform.vsphere` - This is your vSphere specific configuration. This is optional and you can find a “standard” install config example in [the docs](https://docs.openshift.com/container-platform/4.2/installing/installing_bare_metal/installing-bare-metal.html#installation-bare-metal-config-yaml_installing-bare-metal).
+* `platform.vsphere` - This is your vSphere specific configuration. This is optional and you can find a "standard" install config example in [the docs](https://docs.openshift.com/container-platform/4.2/installing/installing_bare_metal/installing-bare-metal.html#installation-bare-metal-config-yaml_installing-bare-metal).
 * `pullSecret` - This pull secret can be obtained by going to [cloud.redhat.com](https://cloud.redhat.com/openshift/install)
   * Note: I saved mine as ~/.openshift/pull-secret.json
 * `sshKey` - This is your public SSH key (e.g. id_rsa.pub)
@@ -350,7 +350,7 @@ I’m going over the options at a high level:
 
 ### Create Ignition Files
 
-The next step in the process is to create the installer manifest files using the `openshift-install` command. Keep in mind that you need to be in the install directory you created (in my case that’s the `openshift4` directory).
+The next step in the process is to create the installer manifest files using the `openshift-install` command. Keep in mind that you need to be in the install directory you created (in my case that's the `openshift4` directory).
 
 ```
 [chernand@laptop openshift4]$ openshift-install create manifests
@@ -375,7 +375,7 @@ spec:
 status: {}
 ```
 
-To find out more about why you can’t run workloads on OpenShift 4.2 on the control plane, please refer to the [official documentation](https://docs.openshift.com/container-platform/4.2/installing/installing_vsphere/installing-vsphere.html#installation-user-infra-generate-k8s-manifest-ignition_installing-vsphere).
+To find out more about why you can't run workloads on OpenShift 4.2 on the control plane, please refer to the [official documentation](https://docs.openshift.com/container-platform/4.2/installing/installing_vsphere/installing-vsphere.html#installation-user-infra-generate-k8s-manifest-ignition_installing-vsphere).
 
 Once the manifests are created, you can go ahead and create the ignition files for installation.
 
@@ -418,7 +418,7 @@ Next, copy over the bootstrap.ign file over to this webserver.
 [chernand@laptop openshift4]$ scp bootstrap.ign root@192.168.1.110:/var/www/html/ignition/
 ```
 
-We’ll need the `base64` encoding for each of the ignition files we’re going to pass to VSphere when we create the VMs. Do this by encoding the files and putting the result in a file for later use.
+We'll need the `base64` encoding for each of the ignition files we're going to pass to VSphere when we create the VMs. Do this by encoding the files and putting the result in a file for later use.
 
 ```
 [chernand@laptop openshift4]$ for i in append-bootstrap master worker
@@ -435,23 +435,23 @@ You are now ready to create the VMs.
 
 ### Creating the Virtual Machines
 
-Log back into the vSphere webui to create the virtual machines from the templates you created. Navigate to “VMs and Templates” (the icon that looks like a sheet of paper); and then right click the “worker-bootstrap-template” and select `New VM From this Template...` This brings up the “Deploy From Template” wizard. Name this VM “bootstrap” and make sure it’s in the openshift4 folder.
+Log back into the vSphere webui to create the virtual machines from the templates you created. Navigate to "VMs and Templates" (the icon that looks like a sheet of paper); and then right click the "worker-bootstrap-template" and select `New VM From this Template...` This brings up the "Deploy From Template" wizard. Name this VM "bootstrap" and make sure it's in the openshift4 folder.
 
 ![createbootstrapfromtemp](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-dhcp/images/18.creatingbootstrapfromtemplate.png)
 
-After you click next, select one of your ESXi hosts in your cluster as a destination compute resource and click “Next”. On the next page, it’ll ask you to select a datastore for this VM. Select the appropriate store for your cluster and make sure you thin provision the disk.
+After you click next, select one of your ESXi hosts in your cluster as a destination compute resource and click "Next". On the next page, it'll ask you to select a datastore for this VM. Select the appropriate store for your cluster and make sure you thin provision the disk.
 
 ![bootstrapthinvm](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-dhcp/images/19.bootstrapthinprovision.png)
 
-After clicking next, check off “Customize this virtual machine's hardware” on the “Select clone options” page.
+After clicking next, check off "Customize this virtual machine's hardware" on the "Select clone options" page.
 
 ![customhardware](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-dhcp/images/20.customizehardware.png)
 
-After you click next, it’ll bring up the “Customize hardware” page. For the bootstrap we are setting 4 CPUs, 8GB of RAM, 120GB of HD space, and I will also set the custom MAC address for my DHCP server. It should look something like this:
+After you click next, it'll bring up the "Customize hardware" page. For the bootstrap we are setting 4 CPUs, 8GB of RAM, 120GB of HD space, and I will also set the custom MAC address for my DHCP server. It should look something like this:
 
 ![bootstraphardwaresettings](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-dhcp/images/21.bootstraphardwaresettings.png)
 
-On that same screen click on “VM Options” and expand the “Advanced” menu. Scroll down to the “Configuration Parameters” section and click on “Edit Configuration...”. This will bring up the parameters menu. There, you will change the `guestinfo.ignition.config.data` value from `changeme` to the contents of your `append-bootstrap.64` file.
+On that same screen click on "VM Options" and expand the "Advanced" menu. Scroll down to the "Configuration Parameters" section and click on "Edit Configuration...". This will bring up the parameters menu. There, you will change the `guestinfo.ignition.config.data` value from `changeme` to the contents of your `append-bootstrap.64` file.
 
 ```
 [chernand@laptop openshift4]$ cat append-bootstrap.64
@@ -461,11 +461,11 @@ Here is a screenshot of my configuration:
 
 ![btsrpigndata](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-dhcp/images/22.boostrapignitiondata.png)
 
-Click “OK” and then click “Next” on the “Customize Hardware” screen. This will bring you to the overview page.
+Click "OK" and then click "Next" on the "Customize Hardware" screen. This will bring you to the overview page.
 
 ![btstrpoverviewpage](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-dhcp/images/23.bootstrapovervivewpage.png)
 
-Click “Finish”, to create your bootstrap VM.
+Click "Finish", to create your bootstrap VM.
 
 You need to perform these steps at least 5 more times (3 times for the masters and 2 more times for the workers). Use the following table to configure your servers, which is based on the resource requirements listed on [the official documentation](https://docs.openshift.com/container-platform/4.2/installing/installing_vsphere/installing-vsphere.html#minimum-resource-requirements_installing-vsphere).
 
@@ -475,11 +475,11 @@ You need to perform these steps at least 5 more times (3 times for the masters a
 | master | 4 | 16 GB | 120 GB | Output of: cat openshift4/master.64 |
 | worker | 2 | 8 GB | 120 GB | Output of: cat openshift4/worker.64 |
 
-Once you’ve created your 3 masters and 2 workers, you should have 6 VMs in total. One for the bootstrap, three for the masters, and two for the workers. 
+Once you've created your 3 masters and 2 workers, you should have 6 VMs in total. One for the bootstrap, three for the masters, and two for the workers. 
 
 ![ocp4fullvms](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-dhcp/images/24.ocp4fullvms.png)
 
-Now boot the VMs. It doesn’t matter which order you boot them in, but I booted mine in the following order:
+Now boot the VMs. It doesn't matter which order you boot them in, but I booted mine in the following order:
 
 * Bootstrap
 * Masters
@@ -504,7 +504,7 @@ Once you see this message; you can safely delete the bootstrap VM and continue w
 
 ### Finishing Install
 
-Once the bootstrap process is complete, the cluster is actually up and running; but not in a state where it’s ready to receive workloads. To finish the install process first export the `KUBECONFIG` environment variable.
+Once the bootstrap process is complete, the cluster is actually up and running; but not in a state where it's ready to receive workloads. To finish the install process first export the `KUBECONFIG` environment variable.
 
 ```
 [chernand@laptop openshift4]$ export KUBECONFIG=~/openshift4/auth/kubeconfig
@@ -533,7 +533,7 @@ You can approve any pending CSRs by running the following command (please read m
 [chernand@laptop openshift4]$ oc get csr --no-headers | awk '{print $1}' | xargs oc adm certificate approve
 ```
 
-After you’ve verified that all CSRs are approved, you should be able to see your nodes.
+After you've verified that all CSRs are approved, you should be able to see your nodes.
 
 ```
 [chernand@laptop openshift4]$ oc get nodes
@@ -563,7 +563,7 @@ INFO Access the OpenShift web-console here: https://console-openshift-console.ap
 INFO Login to the console with user: kubeadmin, password: STeaa-LjEB3-fjNzm-2jUFA
 ```
 
-Once you’ve seen this message, the install is complete and the cluster is ready to use. If you provided your vSphere credentials, you’ll have a `storageclass` set.
+Once you've seen this message, the install is complete and the cluster is ready to use. If you provided your vSphere credentials, you'll have a `storageclass` set.
 
 ```
 [chernand@laptop openshift4]$ oc get sc
@@ -572,7 +572,7 @@ thin (default)   kubernetes.io/vsphere-volume   13m
 ```
 You can use this `storageclass` to dynamically create VDMKs for your applications.
 
-If you didn’t provide your vSphere credentials, you can consult the [VMware Documentation site](https://vmware.github.io/vsphere-storage-for-kubernetes/documentation/index.html) for how to set up storage integration with Kubernetes.
+If you didn't provide your vSphere credentials, you can consult the [VMware Documentation site](https://vmware.github.io/vsphere-storage-for-kubernetes/documentation/index.html) for how to set up storage integration with Kubernetes.
 
 ## Conclusion
 In this blog we went over how to install OpenShift 4 on VMware using the UPI method using DHCP. We also displayed the vSphere integration that allows OpenShift to create VDMKs for the applications. In my next blog, I will be going over how to install using static IPs. So, stay tuned!
