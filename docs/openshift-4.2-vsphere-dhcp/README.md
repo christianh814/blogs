@@ -206,5 +206,5 @@ Once you have the prerequisites in place, you're ready to begin the installation
 
 In your vSphere web UI, after you login, navigate to "VMs and Templates" (it's the icon that looks like a piece of paper). From here right click on your datacenter and select `New Folder` → `New VM and Template Folder`. Name this new folder the name of your cluster id. In my case, I named mine `openshift4`. You should have a new folder that looks like this.
 
-[!newfolder](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-dhcp/images/1.newfolder.png)
+![newfolder](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-dhcp/images/1.newfolder.png)
 
