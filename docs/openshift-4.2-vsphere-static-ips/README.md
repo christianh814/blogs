@@ -405,3 +405,125 @@ You will need to run through these steps at least 5 more times (3 masters and 2 
 Once you have all the servers created, the openshift4 directory should look something like this:
 
 ![vmtree](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-static-ips/images/33.staticiptreee.png)
+
+Next, boot up your bootstrap VM and open up the console. You’ll get the “RHEL CoreOS Installer” install splash screen. Hit the `TAB` button to interrupt the boot countdown so you can pass kernel parameters for the install.
+
+![tabrhcos](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-static-ips/images/34.tabrhelcores.png)
+
+On this screen, you’ll pass the following parameters. Please note that this needs to be done **__all on one line__**, I broke it up for easier readability.
+
+```
+ip=192.168.1.116::192.168.1.1:255.255.255.0:bootstrap.openshift4.example.com:ens192:none
+nameserver=192.168.1.2
+coreos.inst.install_dev=sda
+coreos.inst.image_url=http://192.168.1.110:8080/install/bios.raw.gz
+coreos.inst.ignition_url=http://192.168.1.110:8080/ignition/append-bootstrap.ign
+```
+> **NOTE** Using `ip=...` syntax will set the host with a static IP you provided persistently across reboots. The syntax is: `ip=$IPADDRESS::$DEFAULTGW:$NETMASK:$HOSTNAMEFQDN:$IFACE:none nameserver=$DNSSERVERIP`
+
+This is how it looked like in my environment:
+
+![bootparams](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-static-ips/images/35.bootparams.png)
+
+Do this for **__ALL__** your servers, substituting the correct ip/config where appropriate. I did mine in the following order:
+
+* Bootstrap
+* Masters
+* Workers
+
+### Bootstrap Process
+Back on the installation host, wait for the bootstrap complete using the OpenShift installer.
+
+```
+[chernand@laptop openshift4]$ openshift-install wait-for bootstrap-complete --log-level debug
+DEBUG OpenShift Installer v4.2.0                   
+DEBUG Built from commit 90ccb37ac1f85ae811c50a29f9bb7e779c5045fb
+INFO Waiting up to 30m0s for the Kubernetes API at https://api.openshift4.example.com:6443...
+INFO API v1.14.6+2e5ed54 up                       
+INFO Waiting up to 30m0s for bootstrapping to complete...
+DEBUG Bootstrap status: complete                   
+INFO It is now safe to remove the bootstrap resources
+```
+
+Once you see this message you can safely delete the bootstrap VM and continue with the installation.
+
+### Finishing Install
+
+With the bootstrap process completed, the cluster is actually up and running; but not in a state where it’s ready to receive workloads. Finish the install process by first exporting the `KUBECONFIG` environment variable.
+
+```
+[chernand@laptop openshift4]$ export KUBECONFIG=~/openshift4/auth/kubeconfig
+```
+
+You can now access the API. You first need to check if there are any CSRs that are pending for any of the nodes. You can do this by running `oc get csr`, this will list all the CSRs for your cluster.
+
+```
+[chernand@laptop openshift4]$ oc get csr
+NAME        AGE     REQUESTOR                                                                   CONDITION
+csr-4hn7m   6m36s   system:node:master3.openshift4.example.com                                  Approved,Issued
+csr-4p6jz   7m8s    system:serviceaccount:openshift-machine-config-operator:node-bootstrapper   Approved,Issued
+csr-6gvgh   6m21s   system:node:worker2.openshift4.example.com                                  Approved,Issued
+csr-8q4q4   6m20s   system:node:master1.openshift4.example.com                                  Approved,Issued
+csr-b5b8g   6m36s   system:node:master2.openshift4.example.com                                  Approved,Issued
+csr-dc2vr   6m41s   system:serviceaccount:openshift-machine-config-operator:node-bootstrapper   Approved,Issued
+csr-fwprs   6m22s   system:node:worker1.openshift4.example.com                                  Approved,Issued
+csr-k6vfk   6m40s   system:serviceaccount:openshift-machine-config-operator:node-bootstrapper   Approved,Issued
+csr-l97ww   6m42s   system:serviceaccount:openshift-machine-config-operator:node-bootstrapper   Approved,Issued
+csr-nm9hr   7m8s    system:serviceaccount:openshift-machine-config-operator:node-bootstrapper   Approved,Issued
+```
+
+You can approve any pending CSRs by running the following command (please read more about certificates in the [official documentation](https://docs.openshift.com/container-platform/4.2/installing/installing_vsphere/installing-vsphere.html#installation-approve-csrs_installing-vsphere)):
+
+```
+[chernand@laptop openshift4]$ oc get csr --no-headers | awk '{print $1}' | xargs oc adm certificate approve
+```
+
+After you’ve verified that all CSRs are approved, you should be able to see your nodes.
+
+```
+[chernand@laptop openshift4]$ oc get nodes
+NAME                             STATUS   ROLES    AGE     VERSION
+master1.openshift4.example.com   Ready    master   9m55s   v1.14.6+c07e432da
+master2.openshift4.example.com   Ready    master   10m     v1.14.6+c07e432da
+master3.openshift4.example.com   Ready    master   10m     v1.14.6+c07e432da
+worker1.openshift4.example.com   Ready    worker   9m56s   v1.14.6+c07e432da
+worker2.openshift4.example.com   Ready    worker   9m55s   v1.14.6+c07e432da
+```
+
+In order to complete the installation, you need to add storage to the image registry. For testing clusters, you can set this to emptyDir (for more permanent storage, please see the [official doc for more information](https://docs.openshift.com/container-platform/4.2/installing/installing_vsphere/installing-vsphere.html#registry-configuring-storage-vsphere_installing-vsphere)).
+
+```
+[chernand@laptop openshift4]$ oc patch configs.imageregistry.operator.openshift.io cluster \
+--type merge --patch '{"spec":{"storage":{"emptyDir":{}}}}'
+```
+
+At this point, you can now finish the installation process.
+
+```
+[chernand@laptop openshift4]$ openshift-install wait-for install-complete
+INFO Waiting up to 30m0s for the cluster at https://api.openshift4.example.com:6443 to initialize...
+INFO Waiting up to 10m0s for the openshift-console route to be created...
+INFO Install complete!                            
+INFO To access the cluster as the system:admin user when using 'oc', run 'export KUBECONFIG=/home/chernand/openshift4/auth/kubeconfig'
+INFO Access the OpenShift web-console here: https://console-openshift-console.apps.openshift4.example.com
+INFO Login to the console with user: kubeadmin, password: STeaa-LjEB3-fjNzm-2jUFA
+```
+
+Once you’ve seen this message, the install is complete and the cluster is ready to use. If you provided your vSphere credentials, you’ll have a `storageclass` set so you can create storage.
+
+```
+[chernand@laptop openshift4]$ oc get sc
+NAME              PROVISIONER                    AGE
+thin (default)   kubernetes.io/vsphere-volume   13m
+```
+
+You can use this `storageclass` to dynamically create VDMKs for your applications.
+
+If you didn’t provide your vSphere credentials, you can consult the [VMware Documentation site](https://vmware.github.io/vsphere-storage-for-kubernetes/documentation/index.html) for how to set up storage integration with Kubernetes.
+
+## Conclusion
+In this blog we went over how to install OpenShift 4 on VMware using the UPI method and how to set up RHCOS with static IPs. We also displayed the vSphere integration that allows OpenShift to create VDMKs for the applications.
+
+Using OpenShift 4 on VMware is a great way to run your containerized workloads on your virtualization platform. Using OpenShift to manage your application workloads on top of VMware gives you the flexibility in your infrastructure to move workloads if the need arises.
+
+We invite you to [install OpenShift 4](https://try.openshift.com/) on VMware vSphere and share your experience!
