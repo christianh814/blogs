@@ -190,4 +190,6 @@ Once the prerequisites are place, you’re ready to begin the installation. The 
 
 For static IP configurations, you will need to upload the ISO into a datastore. On the vSphere WebUI, click on the “Storage” navigation button (it looks like stacked cylinders), and click on the datastore you’d like to upload the ISO to. In my example, I have a datastore specifically for ISOs:
 
-![datastoreiso]()
+![datastoreiso](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-static-ips/images/16.datastoreiso.png)
+
+
