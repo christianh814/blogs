@@ -1,26 +1,26 @@
 # OpenShift 4.2  vSphere Install with Static IPs
 
-In the previous blog I went over how to install OpenShift 4.2 on VMware vSphere 6.7 using DHCP. Using DHCP with address reservation using MAC address filtering is a common way to ensure network configurations are set and consistent on Red Hat Enterprise Linux CoreOS (RHCOS). 
+In the previous blog I went over how to install OpenShift 4.2 on VMware vSphere 6.7 using DHCP. Using DHCP with address reservation via MAC address filtering is a common way of ensuring network configurations are set and consistent on Red Hat Enterprise Linux CoreOS (RHCOS).
 
-Many environments would rather use static IP configuration to achieve the same consistent network configurations. With the release of OpenShift 4.2, we have now added the support to configure network configurations (and persist them across reboots) in the preboot ignition phase for RHCOS.
+Many environments would rather use static IP configuration to achieve the same consistent network configurations. With the release of OpenShift 4.2, we have now added the ability to configure network configurations (and persist them across reboots) in the preboot ignition phase for RHCOS.
 
-In this blog we are going to go over how to install OpenShift 4 on VMware vSphere using static IPs.
+In this blog we are going to go over how to install OpenShift 4.2 on VMware vSphere using static IPs.
 
 ## Environment Overview
 
-Like the previous blog, I am using vSphere version 6.7.0 and ESXi version 6.7.0 Update 3. I will be following the [official documentation](https://docs.openshift.com/container-platform/4.2/installing/installing_vsphere/installing-vsphere.html) where, you can read more information about prerequisites including the need to set up DNS, Load Balancer, Artifacts, and other ancillary services/items.
+As in our previous blog, I am using vSphere version 6.7.0 and ESXi version 6.7.0 Update 3. I will be following the [official documentation](https://docs.openshift.com/container-platform/4.2/installing/installing_vsphere/installing-vsphere.html) where, you can read more information about prerequisites including the need to set up DNS, Load Balancer, Artifacts, and other ancillary services/items.
 
 ## Prerequisites
 
-It’s always important that you get familiar with the prerequisites by reading the [official documentation](https://docs.openshift.com/container-platform/4.2/installing/installing_vsphere/installing-vsphere.html#installation-infrastructure-user-infra_installing-vsphere) before you install. There you can find more details about the prerequisites and what it entails. I will go over the [prerequisites](https://docs.openshift.com/container-platform/4.2/installing/installing_vsphere/installing-vsphere.html#installation-infrastructure-user-infra_installing-vsphere) at a high level, and will link examples where possible.
+It's always important that you get familiar with the prerequisites by reading the [official documentation](https://docs.openshift.com/container-platform/4.2/installing/installing_vsphere/installing-vsphere.html#installation-infrastructure-user-infra_installing-vsphere) before you install. There you can find more details about the prerequisites and what they entail. I will go over the [prerequisites](https://docs.openshift.com/container-platform/4.2/installing/installing_vsphere/installing-vsphere.html#installation-infrastructure-user-infra_installing-vsphere) at a high level, and will link examples where possible.
 
 ### vSphere Credentials
 
-I will be using my administrative credentials for vSphere. I will also be passing these credentials to the OpenShift 4 installer and, by extension, to the OpenShift cluster. It’s not a requirement to do so, and installing without the credentials will effectively turn your installation into a “Bare Metal UPI” installation. Most notably, you’ll lose the ability to dynamically create VDMKs for your applications at install time.
+I will be using my administrative credentials for vSphere. I will also be passing these credentials to the OpenShift 4 installer and, by extension, to the OpenShift cluster. It's not a requirement to do so, and installing without the credentials will effectively turn your installation into a ["Bare Metal UPI"](https://blog.openshift.com/openshift-4-bare-metal-install-quickstart/) installation. Most notably, you'll lose the ability to dynamically create VDMKs for your applications at install time.
 
 ### DNS
 
-Like any OpenShift 4 installation, the first consideration you need to take into account when setting up DNS for OpenShift 4 is the “cluster id”. The “cluster id” becomes part of your cluster’s FQDN. For example; with a cluster id of “openshift4” and my domain of “example.com”, the cluster domain (i.e. the FQDN) for my cluster is `openshift4.example.com`
+Like any OpenShift 4 installation, the first consideration you need to take into account when setting up DNS for OpenShift 4 is the "cluster id". The "cluster id" becomes part of your cluster's FQDN. For example; with a cluster id of "openshift4" and my domain of "example.com", the cluster domain (i.e. the FQDN) for my cluster is `openshift4.example.com`
 
 DNS entries are created using the `$CLUSTERID.$DOMAIN` cluster domain FQDN nomenclature. All DNS lookups will be based on this cluster domain. Using my example cluster domain, `openshift4.example.com`, I have the following DNS entries set up in my environment. Note that the etcd servers are pointed to the IP of the masters, and they are in the form of `etcd-$INDEX`.
 
@@ -61,7 +61,7 @@ A wildcard DNS entry needs to be in place for the OpenShift 4 ingress router, wh
 192.168.1.110
 ```
 
-In addition to the mentioned entries, you’ll also need to add SRV records. These records are needed for the masters to find the etcd servers. This needs to be in the form of `_etcd-server-ssl._tcp.$CLUSTERDOMMAIN` in your DNS server.
+In addition to the mentioned entries, you'll also need to add SRV records. These records are needed for the masters to find the etcd servers. This needs to be in the form of `_etcd-server-ssl._tcp.$CLUSTERDOMMAIN` in your DNS server.
 
 ```
 [chernand@laptop ~]$ dig _etcd-server-ssl._tcp.openshift4.example.com SRV +short
@@ -108,7 +108,7 @@ backend machine-config-server
     server master3 192.168.1.113:22623 check
 ```
 
-You will also need to configure `80` and `443` to point to the worker nodes. The HAProxy configuration is below (keeping in mind that we’re using TCP sockets).
+You will also need to configure `80` and `443` to point to the worker nodes. The HAProxy configuration is below (keeping in mind that we're using TCP sockets).
 
 ```
 frontend ingress-http
@@ -148,7 +148,7 @@ A web server is needed in order to hold the ignition configurations and install 
 
 ### Artifacts
 
-You will need to obtain the installation artifacts by visiting [try.openshift.com](https://try.openshift.com), there you can login and click on “VMware vSphere” to get the installation artifacts. You will need:
+You will need to obtain the installation artifacts by visiting [try.openshift.com](https://try.openshift.com), there you can login and click on "VMware vSphere" to get the installation artifacts. You will need:
 
 * [OpenShift4 Client Tools](https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/)
 * [OpenShift4 OVA](https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.2/latest/)
@@ -166,7 +166,7 @@ You will need to put the client and the installer in your `$PATH`, in my example
 /usr/local/bin/openshift-install
 ```
 
-I’ve also downloaded my pullsecret as `pull-secret.json` and saved it under a `~/.openshift` directory I created.
+I've also downloaded my pullsecret as `pull-secret.json` and saved it under a `~/.openshift` directory I created.
 
 ```
 [chernand@laptop ~]$ file ~/.openshift/pull-secret.json
@@ -184,15 +184,15 @@ For more information about ssh and RHCOS, you can read that at the [official doc
 
 ## Installation
 
-Once the prerequisites are place, you’re ready to begin the installation. The current installation of OpenShift 4 on vSphere must be done in stages. I will go over each stage step by step.
+Once the prerequisites are place, you're ready to begin the installation. The current installation of OpenShift 4 on vSphere must be done in stages. I will go over each stage step by step.
 
 ### vSphere Preparations
 
-For static IP configurations, you will need to upload the ISO into a datastore. On the vSphere WebUI, click on the “Storage” navigation button (it looks like stacked cylinders), and click on the datastore you’d like to upload the ISO to. In my example, I have a datastore specifically for ISOs:
+For static IP configurations, you will need to upload the ISO into a datastore. On the vSphere WebUI, click on the "Storage" navigation button (it looks like stacked cylinders), and click on the datastore you'd like to upload the ISO to. In my example, I have a datastore specifically for ISOs:
 
 ![datastoreiso](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-static-ips/images/16.datastoreiso.png)
 
-On the right hand side window, you’ll see the summary page with navigation buttons. Select “Upload Files” and select the RHCOS ISO.
+On the right hand side window, you'll see the summary page with navigation buttons. Select "Upload Files" and select the RHCOS ISO.
 
 > **NOTE**: Make sure you upload the ISO to a datastore that all your ESXi hosts have access to.
 
@@ -200,7 +200,7 @@ Once uploaded, you should have something like this:
 
 ![isouploaded](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-static-ips/images/17.isouploaded.png)
 
-You will also need the aforementioned [OpenShift 4 Metal BIOS](https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.2/latest/) file. I’ve downloaded the bios file and saved it as `bios.raw.gz` on my webserver.
+You will also need the aforementioned [OpenShift 4 Metal BIOS](https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.2/latest/) file. I've downloaded the bios file and saved it as `bios.raw.gz` on my webserver.
 
 ```
 [root@webserver ~]# ll /var/www/html/install/bios.raw.gz
@@ -209,9 +209,9 @@ You will also need the aforementioned [OpenShift 4 Metal BIOS](https://mirror.op
 
 ### Generate Install Configuration
 
-Now that you’ve uploaded the ISO to vSphere for installation, you can go ahead and generate the `install-config.yaml` file. This file tells OpenShift about the environment you’re going to install to.
+Now that you've uploaded the ISO to vSphere for installation, you can go ahead and generate the `install-config.yaml` file. This file tells OpenShift about the environment you're going to install to.
 
-Before you create this file you’ll need an installation directory to store all your artifacts. I’m going to name mine `openshift4`.
+Before you create this file you'll need an installation directory to store all your artifacts. I'm going to name mine `openshift4`.
 
 ```
 [chernand@laptop ~]$ mkdir openshift4
@@ -220,7 +220,7 @@ Before you create this file you’ll need an installation directory to store all
 
 > **NOTE**: Stay in this directory for the remainder of the installation procedure.
 
-I’m going to export some environment variables that will make the creation of the `install-config.yaml` file easier. Please substitute your configuration where applicable.
+I'm going to export some environment variables that will make the creation of the `install-config.yaml` file easier. Please substitute your configuration where applicable.
 
 ```
 [chernand@laptop openshift4]$ export DOMAIN=example.com
@@ -234,7 +234,7 @@ I’m going to export some environment variables that will make the creation of 
 [chernand@laptop openshift4]$ export OCP_SSH_KEY=$(< ~/.ssh/id_rsa.pub)
 ```
 
-Once you’ve exported those, go ahead and create the `install-config.yaml` file in the `openshift4` directory by running the following:
+Once you've exported those, go ahead and create the `install-config.yaml` file in the `openshift4` directory by running the following:
 
 ```
 [chernand@laptop openshift4]$ cat <<EOF > install-config.yaml
@@ -269,12 +269,12 @@ sshKey: '${OCP_SSH_KEY}'
 EOF
 ```
 
-I’m going over the options at a high level:
+I'm going over the options at a high level:
 
 * `baseDomain` - This is the domain of your environment.
 * `metadata.name` - This is your clusterid
   * Note: this makes all FQDNS for the cluster have the `openshift4.example.com` domain.
-* `platform.vsphere` - This is your vSphere specific configuration. This is optional and you can find a “standard” install config example in [the docs](https://docs.openshift.com/container-platform/4.2/installing/installing_bare_metal/installing-bare-metal.html#installation-bare-metal-config-yaml_installing-bare-metal).
+* `platform.vsphere` - This is your vSphere specific configuration. This is optional and you can find a "standard" install config example in [the docs](https://docs.openshift.com/container-platform/4.2/installing/installing_bare_metal/installing-bare-metal.html#installation-bare-metal-config-yaml_installing-bare-metal).
 * `pullSecret` - This pull secret can be obtained by going to [cloud.redhat.com](https://cloud.redhat.com).
   * Note: I saved mine as `~/.openshift/pull-secret.json`
 * `sshKey` - This is your public SSH key (e.g. `id_rsa.pub`)
@@ -283,7 +283,7 @@ I’m going over the options at a high level:
 
 ### Create Ignition Files
 
-The next step in the process is to create the installer manifest files using the `openshift-install` command. Keep in mind that you need to be in the install directory you created (in my case that’s the `openshift4` directory).
+The next step in the process is to create the installer manifest files using the `openshift-install` command. Keep in mind that you need to be in the install directory you created (in my case that's the `openshift4` directory).
 
 ```
 [chernand@laptop openshift4]$ openshift-install create manifests
@@ -308,7 +308,7 @@ spec:
 status: {}
 ```
 
-To find out more about why you can’t run workloads on OpenShift 4.2 on the control plane, please refer to the [official documentation](https://docs.openshift.com/container-platform/4.2/installing/installing_vsphere/installing-vsphere.html#installation-user-infra-generate-k8s-manifest-ignition_installing-vsphere).
+To find out more about why you can't run workloads on OpenShift 4.2 on the control plane, please refer to the [official documentation](https://docs.openshift.com/container-platform/4.2/installing/installing_vsphere/installing-vsphere.html#installation-user-infra-generate-k8s-manifest-ignition_installing-vsphere).
 
 Once the manifests are created, you can go ahead and create the ignition files for installation.
 
@@ -361,19 +361,19 @@ On the VMs and Template navigation screen (the one that looks like sheets of pap
 
 ![newvm](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-static-ips/images/25.newvirtualmachinestatic.png)
 
-The “New Virtual Machine” wizard will start. 
+The "New Virtual Machine" wizard will start. 
 
 ![newvmwiz](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-static-ips/images/26.createnewvirtmachinestaticips.png)
 
-Make sure “Create a new virtual machine” is selected and click next. On the next screen, name this VM “bootstrap” and make sure it gets created in the `openshift4` folder. It should look like this:
+Make sure "Create a new virtual machine" is selected and click next. On the next screen, name this VM "bootstrap" and make sure it gets created in the `openshift4` folder. It should look like this:
 
 ![newbstrpfolder](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-static-ips/images/27.createbootstrapstaticips.png)
 
-On the next screen, choose an ESXi host in your cluster for the initial creation of this bootstrap VM, and click “Next”. The next screen it will ask you which datastore to use for the installation. Choose the datastore appropriate for your installation. 
+On the next screen, choose an ESXi host in your cluster for the initial creation of this bootstrap VM, and click "Next". The next screen it will ask you which datastore to use for the installation. Choose the datastore appropriate for your installation. 
 
 ![storeforbstp](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-static-ips/images/28.storageconfigbootstrapstatic.png)
 
-On the next page, it’ll ask you to set the compatibility version. Go ahead and select “ESXi 6.7 and Later” for the version and select next. On the next page, set the OS Family to “Linux” and the Version to “Red Hat Enterprise Linux 7 (64-Bit).
+On the next page, it'll ask you to set the compatibility version. Go ahead and select "ESXi 6.7 and Later" for the version and select next. On the next page, set the OS Family to "Linux" and the Version to "Red Hat Enterprise Linux 7 (64-Bit).
 
 ![osfamily](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-static-ips/images/29.osfamily.png)
 
@@ -381,17 +381,17 @@ After you click next, it will ask you to customize the hardware. For the bootstr
 
 ![bstrpvmsettings](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-static-ips/images/30.boostrapvmsettnigs-static.png)
 
-On The “New CD/DVD Drive” select “Datastore ISO File” and select the RHCOS ISO file you’ve uploaded earlier.
+On The "New CD/DVD Drive" select "Datastore ISO File" and select the RHCOS ISO file you've uploaded earlier.
 
-Next, click on the “VM Options” tab and scroll down and expand “Advanced”. Set “Latency Sensitivity” to “High”.
+Next, click on the "VM Options" tab and scroll down and expand "Advanced". Set "Latency Sensitivity" to "High".
 
 ![sensi](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-static-ips/images/31.latnecysensitivtystaticips.png)
 
-Click “Next”. This will bring you to the overview page:
+Click "Next". This will bring you to the overview page:
 
 ![readytocreatebtsrp](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-static-ips/images/32.boostrapfinishstatiipssetupvm.png)
 
-Go ahead and click “Finish”, to create this VM.
+Go ahead and click "Finish", to create this VM.
 
 You will need to run through these steps at least 5 more times (3 masters and 2 workers). Use the table below (based on the [official documentation](https://docs.openshift.com/container-platform/4.2/installing/installing_vsphere/installing-vsphere.html#minimum-resource-requirements_installing-vsphere)) to create your other 5 VMs. 
 
@@ -400,17 +400,17 @@ You will need to run through these steps at least 5 more times (3 masters and 2 
 | Masters | Red Hat Enterprise Linux 7 | 4 | 16 GB | 120 GB |
 | Workers | Red Hat Enterprise Linux 7 | 2 | 8 GB | 120 GB |
 
-> **NOTE**, if you’re cloning from the bootstrap, make sure you adjust the parameters accordingly and that you’re selecting “thin provision” for the disk clone. 
+> **NOTE**, if you're cloning from the bootstrap, make sure you adjust the parameters accordingly and that you're selecting "thin provision" for the disk clone. 
 
 Once you have all the servers created, the openshift4 directory should look something like this:
 
 ![vmtree](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-static-ips/images/33.staticiptreee.png)
 
-Next, boot up your bootstrap VM and open up the console. You’ll get the “RHEL CoreOS Installer” install splash screen. Hit the `TAB` button to interrupt the boot countdown so you can pass kernel parameters for the install.
+Next, boot up your bootstrap VM and open up the console. You'll get the "RHEL CoreOS Installer" install splash screen. Hit the `TAB` button to interrupt the boot countdown so you can pass kernel parameters for the install.
 
 ![tabrhcos](https://raw.githubusercontent.com/christianh814/blogs/master/docs/openshift-4.2-vsphere-static-ips/images/34.tabrhelcores.png)
 
-On this screen, you’ll pass the following parameters. Please note that this needs to be done **__all on one line__**, I broke it up for easier readability.
+On this screen, you'll pass the following parameters. Please note that this needs to be done **__all on one line__**, I broke it up for easier readability.
 
 ```
 ip=192.168.1.116::192.168.1.1:255.255.255.0:bootstrap.openshift4.example.com:ens192:none
@@ -449,7 +449,7 @@ Once you see this message you can safely delete the bootstrap VM and continue wi
 
 ### Finishing Install
 
-With the bootstrap process completed, the cluster is actually up and running; but not in a state where it’s ready to receive workloads. Finish the install process by first exporting the `KUBECONFIG` environment variable.
+With the bootstrap process completed, the cluster is actually up and running; but it is not yet in a state where it's ready to receive workloads. Finish the install process by first exporting the `KUBECONFIG` environment variable.
 
 ```
 [chernand@laptop openshift4]$ export KUBECONFIG=~/openshift4/auth/kubeconfig
@@ -478,7 +478,7 @@ You can approve any pending CSRs by running the following command (please read m
 [chernand@laptop openshift4]$ oc get csr --no-headers | awk '{print $1}' | xargs oc adm certificate approve
 ```
 
-After you’ve verified that all CSRs are approved, you should be able to see your nodes.
+After you've verified that all CSRs are approved, you should be able to see your nodes.
 
 ```
 [chernand@laptop openshift4]$ oc get nodes
@@ -509,7 +509,7 @@ INFO Access the OpenShift web-console here: https://console-openshift-console.ap
 INFO Login to the console with user: kubeadmin, password: STeaa-LjEB3-fjNzm-2jUFA
 ```
 
-Once you’ve seen this message, the install is complete and the cluster is ready to use. If you provided your vSphere credentials, you’ll have a `storageclass` set so you can create storage.
+Once you've seen this message, the install is complete and the cluster is ready to use. If you provided your vSphere credentials, you'll have a `storageclass` set so you can create storage.
 
 ```
 [chernand@laptop openshift4]$ oc get sc
@@ -519,7 +519,7 @@ thin (default)   kubernetes.io/vsphere-volume   13m
 
 You can use this `storageclass` to dynamically create VDMKs for your applications.
 
-If you didn’t provide your vSphere credentials, you can consult the [VMware Documentation site](https://vmware.github.io/vsphere-storage-for-kubernetes/documentation/index.html) for how to set up storage integration with Kubernetes.
+If you didn't provide your vSphere credentials, you can consult the [VMware Documentation site](https://vmware.github.io/vsphere-storage-for-kubernetes/documentation/index.html) for how to set up storage integration with Kubernetes.
 
 ## Conclusion
 In this blog we went over how to install OpenShift 4 on VMware using the UPI method and how to set up RHCOS with static IPs. We also displayed the vSphere integration that allows OpenShift to create VDMKs for the applications.
