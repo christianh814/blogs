@@ -395,7 +395,7 @@ Go ahead and click "Finish", to create this VM.
 
 You will need to run through these steps at least 5 more times (3 masters and 2 workers). Use the table below (based on the [official documentation](https://docs.openshift.com/container-platform/4.2/installing/installing_vsphere/installing-vsphere.html#minimum-resource-requirements_installing-vsphere)) to create your other 5 VMs. 
 
-| MACHINE | OPERATING | SYSTEM | vCPU | RAM STORAGE |
+| MACHINE | OPERATING SYSTEM | vCPU | RAM | STORAGE |
 | ------- | ------- | ------- | ------- | ------- |
 | Masters | Red Hat Enterprise Linux 7 | 4 | 16 GB | 120 GB |
 | Workers | Red Hat Enterprise Linux 7 | 2 | 8 GB | 120 GB |
