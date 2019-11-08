@@ -8,7 +8,7 @@ In this blog we are going to go over how to install OpenShift 4.2 on VMware vSph
 
 ## Environment Overview
 
-As in our previous blog, I am using vSphere version 6.7.0 and ESXi version 6.7.0 Update 3. I will be following the [official documentation](https://docs.openshift.com/container-platform/4.2/installing/installing_vsphere/installing-vsphere.html) where, you can read more information about prerequisites including the need to set up DNS, Load Balancer, Artifacts, and other ancillary services/items.
+As in the [previous blog](https://blog.openshift.com/openshift-4-2-vsphere-install-quickstart/), I am using vSphere version 6.7.0 and ESXi version 6.7.0 Update 3. I will be following the [official documentation](https://docs.openshift.com/container-platform/4.2/installing/installing_vsphere/installing-vsphere.html) where, you can read more information about prerequisites including the need to set up DNS, Load Balancer, Artifacts, and other ancillary services/items.
 
 ## Prerequisites
 
