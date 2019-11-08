@@ -307,7 +307,6 @@ Now, create your ignition configs
 
 ```shell
 $ openshift-install create ignition-configs --dir=/root/ocp4
-WARNING Found override for ReleaseImage. Please be warned, this is not advised 
 ```
 
 Please note that it warns you about overriding the image.
