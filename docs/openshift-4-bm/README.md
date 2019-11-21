@@ -301,7 +301,7 @@ Just like the DHCP method, boot from the ISO, and you'll be greeted with the fol
 Once you see this menu, press tab and enter the options that will image the node using the bios file you downloaded, and prepare the node using the ignition file you'll provide. Here is an example that I did for my bootstrap server.
 
 ```
-ip=192.168.7.20::192.168.7.1:255.255.255.0:bootstrap:enp1s0:none
+ip=192.168.7.20::192.168.7.1:255.255.255.0:bootstrap.ocp4.example.com:enp1s0:none
 nameserver=192.168.7.77
 coreos.inst.install_dev=vda
 coreos.inst.image_url=http://192.168.7.77:8080/install/rhcos-4.1.0-x86_64-metal-bios.raw.gz
@@ -312,9 +312,7 @@ coreos.inst.ignition_url=http://192.168.7.77:8080/ignition/bootstrap-static.ign
 
 ![isoinstall](images/rhcos-tab-install.png)
 
-Syntax for the `ip=` and `nameserver=` portion is: `ip=<ipaddress>::<defaultgw>:<netmask>:<hostname>:<iface>:none` and `nameserver=<dns server 1> nameserver=<dns server 2>`
-
-> **NOTE**: You can pass `nameserver=` multiple times
+Syntax for the `ip=` and `nameserver=` portion is: `ip=<ipaddress>::<defaultgw>:<netmask>:<hostnameFQDN>:<iface>:none` and `nameserver=<dns server 1> nameserver=<dns server 2>`
 
 Doing this on OpenShift 4.2 will persist your network configurations accross reboots
 
