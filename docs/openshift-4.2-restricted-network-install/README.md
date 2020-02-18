@@ -161,7 +161,7 @@ The installation images will need to be mirrored in order to complete the instal
 First, you will need to set the following environment variables
 
 ```
-export OCP_RELEASE="4.2.0"
+export OCP_RELEASE="4.2.0-x86_64"
 export LOCAL_REG='registry.ocp4.example.com:5000'
 export LOCAL_REPO='ocp4/openshift4'
 export UPSTREAM_REPO='openshift-release-dev'
